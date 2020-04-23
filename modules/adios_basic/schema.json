@@ -1,0 +1,50 @@
+{
+	"fields": [
+		{"name": "input", "type": "input", "required": "no"},
+		{"name": "output", "type": "output", "required": "no"},
+		{"name": "comm_size", "type": "int", "required": "yes"}
+	],
+	"types": {
+		"input": {
+			"name": "input",
+			"type": "dict",
+			"fields": [
+				{"name": "variables", "type": "variable_list", "required": "yes"}	
+			]
+
+		},
+		"output": {
+			"name": "output",
+			"type": "dict",
+			"fields": [
+				{"name": "variables", "type": "variable_list", "required": "yes"}	
+			]
+
+		},
+		"variable_list": {
+			"name": "variable_list",
+			"type": "list",
+			"element_type": "variable"
+		},
+		"variable": {
+			"name": "variable",
+			"type": "dict",
+			"fields": [
+				{"name": "name", "type": "string", "required": "yes"},
+				{"name": "type", "type": "string", "required": "yes"},
+				{"name": "dims", "type": "string", "required": "yes"},
+				{"name": "decomp", "type": "decomp", "required": "yes"}
+			]
+		},
+		"decomp": {
+			"name": "decomp",
+			"type": "dict",
+			"fields": [
+				{"name": "type", "type": "string", "required": "yes"}	
+			]
+
+		}
+	}
+}
+
+
