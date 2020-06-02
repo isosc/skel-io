@@ -1,0 +1,117 @@
+\#include "mpi.h"
+\#include "adios2.h"
+\#include <iostream>
+\#include <fstream>
+\#include <mutex>
+
+int main(int argc, char *argv[])
+{
+    int rank = 0, nproc = 1;
+
+
+    MPI_Init(&argc, &argv);
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &nproc);
+
+    std::cout << "Starting..." << std::endl;
+
+    ## Process periodic iotasks
+#for $task in $self.models['io-model']['iotasks']
+
+## declare variables
+#for $var in $task.vars
+#if $var['decomp']['type'] == "simple"
+## Create a vector of the correct size (but not dimensionality) to match the local chunk
+## that is being written. This gives us a contiguous block that can be passed to put()
+    std::vector<$var.type> ${var.name}(<%="*".join(map(str,var["shape"]))%>/$self.models['io-model']['num_tasks']);
+#else if $var['decomp']['type'] == "serial"
+## For the serial decomposition, a single process writes the entire thing. For now,
+## let's just allocate memory on all ranks.
+#if $var['shape']
+    std::vector<$var.type> ${var.name}(<%="*".join(map(str,var["shape"]))%>);
+#else
+    std::vector<$var.type> ${var.name}(1);
+#end if
+#else
+// Unhandled decomposition type
+assert (false);
+#end if
+#end for
+
+
+    adios2::ADIOS *ad = nullptr;
+#for $var in $task.vars
+    adios2::Variable<$var.type> var$var.name;
+#end for
+    adios2::Engine writer;
+
+
+    ad = new adios2::ADIOS(MPI_COMM_WORLD);
+    adios2::IO io = ad->DeclareIO("Output");
+#for $var in $task.vars
+    ## TODO: his will definitely not work when ndims > 1
+    var$var.name =
+        io.DefineVariable<$var.type>("$var.name", {<%=",".join(map(str,var["shape"]))%>});
+#end for
+    writer = io.Open("$task.filename", adios2::Mode::Write);
+
+    writer.BeginStep();
+#for $var in $task.vars
+#if $var['decomp']['type'] == "simple"
+## Simple decomp has decomposition along one axis, with one unit on that access assigned to each process. All processes write 
+## the entirety of the other axes
+
+## zip the dimension sizes with a boolean that indicates whether this is the decomposition dimension
+<%
+isdim = [False]*len(var['shape']) # Create list of False 
+isdim[var['decomp']['dim']] = True # Set decomp dim to True
+sd = list(zip(var['shape'], isdim)) 
+
+def get_simple_start(sd):
+    rv = ",".join( map (lambda s: '0' if not s[1] else 'static_cast<size_t>(rank)', sd))
+    return rv
+
+def get_simple_count(sd):
+    rv = ",".join( map (lambda s: str(s[0]) if not s[1] else '1', sd))
+    return rv
+
+%>
+    var${var.name}.SetSelection(adios2::Box<adios2::Dims>(
+                {<%=get_simple_start(sd)%>}, {<%=get_simple_count(sd)%>}));
+##                {static_cast<size_t>(rank*(<%="*".join(map(str,var["shape"]))%>/$self.models['io-model']['num_tasks']))}, {static_cast<size_t>(<%="*".join(map(str,var["shape"]))%>/$self.models['io-model']['num_tasks'])}));
+#else if $var['decomp']['type'] == "serial"
+## Serial decomposition will be written entirely by one rank; no selection needed
+
+#else
+// Unhandled decomposition type
+assert(false)
+#end if
+    writer.Put<$var.type>(var${var.name}, ${var.name}.data());
+#end for
+    writer.EndStep();
+
+    std::cout << "Closing file..." << std::endl;
+
+    writer.Close();
+#end for
+
+    if (rank == 0){
+
+        std::mutex logMutex;
+
+        std::lock_guard<std::mutex> csvLock(logMutex);
+        std::fstream file;
+        file.open ("skel.out", std::ios::out | std::ios::app);
+        if (file) {
+            file << "\"" << 1 << "\",";
+            file << "\"" << 2 << "\",";
+            file << "\"" << 3 << "\"";
+            file <<  std::endl;
+            file.close();
+        }
+    }
+
+    MPI_Finalize();
+
+    return 0;
+}
