@@ -1,0 +1,399 @@
+{
+    "name": "gtc",
+    "num_tasks": 4,
+    "iotasks": [
+        {
+            "vars": [
+                {
+                    "name": "densitye",
+                    "type": "float",
+                    "shape": [
+                        4,
+                        9409,
+                        2
+                    ],
+                    "decomp": {
+                        "type": "simple",
+                        "dim": 0
+                    }
+                },
+                {
+                    "name": "dnesave",
+                    "type": "float",
+                    "shape": [
+                        4,
+                        6,
+                        9409,
+                        2
+                    ],
+                    "decomp": {
+                        "type": "simple",
+                        "dim": 0
+                    }
+                },
+                {
+                    "name": "markere",
+                    "type": "float",
+                    "shape": [
+                        4,
+                        9409
+                    ],
+                    "decomp": {
+                        "type": "simple",
+                        "dim": 0
+                    }
+                },
+                {
+                    "name": "markeri",
+                    "type": "float",
+                    "shape": [
+                        4,
+                        9409
+                    ],
+                    "decomp": {
+                        "type": "simple",
+                        "dim": 0
+                    }
+                },
+                {
+                    "name": "markerit",
+                    "type": "float",
+                    "shape": [
+                        4,
+                        9409
+                    ],
+                    "decomp": {
+                        "type": "simple",
+                        "dim": 0
+                    }
+                },
+                {
+                    "name": "me",
+                    "type": "int32_t",
+                    "shape": [
+                        4
+                    ],
+                    "decomp": {
+                        "type": "simple",
+                        "dim": 0
+                    }
+                },
+                {
+                    "name": "meshne",
+                    "type": "float",
+                    "shape": [
+                        4,
+                        97
+                    ],
+                    "decomp": {
+                        "type": "simple",
+                        "dim": 0
+                    }
+                },
+                {
+                    "name": "meshni",
+                    "type": "float",
+                    "shape": [
+                        4,
+                        97
+                    ],
+                    "decomp": {
+                        "type": "simple",
+                        "dim": 0
+                    }
+                },
+                {
+                    "name": "meshte",
+                    "type": "float",
+                    "shape": [
+                        4,
+                        97
+                    ],
+                    "decomp": {
+                        "type": "simple",
+                        "dim": 0
+                    }
+                },
+                {
+                    "name": "meshti",
+                    "type": "float",
+                    "shape": [
+                        4,
+                        97
+                    ],
+                    "decomp": {
+                        "type": "simple",
+                        "dim": 0
+                    }
+                },
+                {
+                    "name": "mi",
+                    "type": "int32_t",
+                    "shape": [
+                        4
+                    ],
+                    "decomp": {
+                        "type": "simple",
+                        "dim": 0
+                    }
+                },
+                {
+                    "name": "num_pes",
+                    "type": "int32_t",
+                    "shape": [],
+                    "decomp": {
+                        "type": "serial",
+                        "rank": "0"
+                    }
+                },
+                {
+                    "name": "pfluxe",
+                    "type": "float",
+                    "shape": [
+                        4,
+                        97
+                    ],
+                    "decomp": {
+                        "type": "simple",
+                        "dim": 0
+                    }
+                },
+                {
+                    "name": "pfluxi",
+                    "type": "float",
+                    "shape": [
+                        4,
+                        97
+                    ],
+                    "decomp": {
+                        "type": "simple",
+                        "dim": 0
+                    }
+                },
+                {
+                    "name": "phi",
+                    "type": "float",
+                    "shape": [
+                        4,
+                        9409,
+                        2
+                    ],
+                    "decomp": {
+                        "type": "simple",
+                        "dim": 0
+                    }
+                },
+                {
+                    "name": "phi00",
+                    "type": "float",
+                    "shape": [
+                        4,
+                        97
+                    ],
+                    "decomp": {
+                        "type": "simple",
+                        "dim": 0
+                    }
+                },
+                {
+                    "name": "phip00",
+                    "type": "float",
+                    "shape": [
+                        4,
+                        97
+                    ],
+                    "decomp": {
+                        "type": "simple",
+                        "dim": 0
+                    }
+                },
+                {
+                    "name": "phisave",
+                    "type": "float",
+                    "shape": [
+                        4,
+                        6,
+                        9409,
+                        2
+                    ],
+                    "decomp": {
+                        "type": "simple",
+                        "dim": 0
+                    }
+                },
+                {
+                    "name": "pmarke",
+                    "type": "float",
+                    "shape": [
+                        4,
+                        97
+                    ],
+                    "decomp": {
+                        "type": "simple",
+                        "dim": 0
+                    }
+                },
+                {
+                    "name": "pmarki",
+                    "type": "float",
+                    "shape": [
+                        4,
+                        97
+                    ],
+                    "decomp": {
+                        "type": "simple",
+                        "dim": 0
+                    }
+                },
+                {
+                    "name": "pressureepara",
+                    "type": "float",
+                    "shape": [
+                        4,
+                        9409,
+                        2
+                    ],
+                    "decomp": {
+                        "type": "simple",
+                        "dim": 0
+                    }
+                },
+                {
+                    "name": "pressureeperp",
+                    "type": "float",
+                    "shape": [
+                        4,
+                        9409,
+                        2
+                    ],
+                    "decomp": {
+                        "type": "simple",
+                        "dim": 0
+                    }
+                },
+                {
+                    "name": "rdteme",
+                    "type": "float",
+                    "shape": [
+                        4,
+                        97
+                    ],
+                    "decomp": {
+                        "type": "simple",
+                        "dim": 0
+                    }
+                },
+                {
+                    "name": "rdtemi",
+                    "type": "float",
+                    "shape": [
+                        4,
+                        97
+                    ],
+                    "decomp": {
+                        "type": "simple",
+                        "dim": 0
+                    }
+                },
+                {
+                    "name": "tfrac",
+                    "type": "float",
+                    "shape": [
+                        4,
+                        97
+                    ],
+                    "decomp": {
+                        "type": "simple",
+                        "dim": 0
+                    }
+                },
+                {
+                    "name": "tfracn",
+                    "type": "float",
+                    "shape": [
+                        4
+                    ],
+                    "decomp": {
+                        "type": "simple",
+                        "dim": 0
+                    }
+                },
+                {
+                    "name": "zelectron",
+                    "type": "float",
+                    "shape": [
+                        4,
+                        6440,
+                        7
+                    ],
+                    "decomp": {
+                        "type": "simple",
+                        "dim": 0
+                    }
+                },
+                {
+                    "name": "zion",
+                    "type": "float",
+                    "shape": [
+                        4,
+                        6440,
+                        7
+                    ],
+                    "decomp": {
+                        "type": "simple",
+                        "dim": 0
+                    }
+                },
+                {
+                    "name": "zonalce",
+                    "type": "float",
+                    "shape": [
+                        4,
+                        97
+                    ],
+                    "decomp": {
+                        "type": "simple",
+                        "dim": 0
+                    }
+                },
+                {
+                    "name": "zonalci",
+                    "type": "float",
+                    "shape": [
+                        4,
+                        97
+                    ],
+                    "decomp": {
+                        "type": "simple",
+                        "dim": 0
+                    }
+                },
+                {
+                    "name": "zonale",
+                    "type": "float",
+                    "shape": [
+                        4,
+                        97
+                    ],
+                    "decomp": {
+                        "type": "simple",
+                        "dim": 0
+                    }
+                },
+                {
+                    "name": "zonali",
+                    "type": "float",
+                    "shape": [
+                        4,
+                        97
+                    ],
+                    "decomp": {
+                        "type": "simple",
+                        "dim": 0
+                    }
+                }
+            ],
+            "filename": "gtc_restart.bp"
+        }
+    ]
+}

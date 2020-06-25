@@ -82,11 +82,19 @@ def get_simple_count(sd):
 #else if $var['decomp']['type'] == "serial"
 ## Serial decomposition will be written entirely by one rank; no selection needed
 
+if (rank == $var['decomp']['rank']) {
+
 #else
 // Unhandled decomposition type
 assert(false)
 #end if
+
     writer.Put<$var.type>(var${var.name}, ${var.name}.data());
+
+#if $var['decomp']['type'] == "serial"
+}
+#end if
+
 #end for
     writer.EndStep();
 
