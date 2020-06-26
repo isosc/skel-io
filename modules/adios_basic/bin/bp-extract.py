@@ -101,6 +101,9 @@ def high_level(config):
 
 
 def low_level(config):
+  
+  rankset = set() # Use this to count up number of ranks
+    
   model_dict = {}
   model_dict['vars'] = []
   task_dict = {}
@@ -124,6 +127,12 @@ def low_level(config):
     model_dict['vars'].append (var_dict)
     var_dict['blocks'] = engine.BlocksInfo(key, 0)
     var_dict['shape'] = var.Shape()
+
+    # Capture all of the ranks that have written
+    # so we know how many processes are needed. 
+    for block in var_dict['blocks']:
+        print (block)
+        rankset.add(int(block['WriterID']))
 
     # Pull the blocks here
 #    print (dir(io))
@@ -154,7 +163,7 @@ def low_level(config):
   # Now create the rest of the structure for the json
   root = {}
   root['name'] = config.appname
-  root['num_tasks'] = 4
+  root['num_tasks'] = len(rankset)
   root['iotasks'] = []
   root['iotasks'].append(task_dict)
 
