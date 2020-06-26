@@ -11,6 +11,7 @@ def parse_command_line():
   parser = argparse.ArgumentParser(prog='bp-extract')
   parser.add_argument('-b,--bpfile', dest="bpfile", required="true")
   parser.add_argument('-o,--outfile', dest="outfile", required="true")
+  parser.add_argument('-n,--name', dest="appname", required=False, default="appname")
 
   return (parser.parse_args(sys.argv[1:])) # Skip the program name, and pass the rest to the parser
 
@@ -152,7 +153,7 @@ def low_level(config):
 
   # Now create the rest of the structure for the json
   root = {}
-  root['name'] = 'gtc'
+  root['name'] = config.appname
   root['num_tasks'] = 4
   root['iotasks'] = []
   root['iotasks'].append(task_dict)

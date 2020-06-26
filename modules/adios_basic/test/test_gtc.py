@@ -55,7 +55,7 @@ def test_gtc_cycle():
     try_cmd (cmd)
 
     # Now extract a model from the output
-    cmd = '/home/logan/sw/spack/opt/spack/linux-ubuntu18.04-sandybridge/gcc-7.5.0/python-3.7.6-yaoqr5r7uwjfgu5gn6velor3b7qelxvj/bin/python3 {}/bin/bp-extract.py -b gtc_restart.bp -o gtc_final.json'.format(module_root)
+    cmd = '/home/logan/sw/spack/opt/spack/linux-ubuntu18.04-sandybridge/gcc-7.5.0/python-3.7.6-yaoqr5r7uwjfgu5gn6velor3b7qelxvj/bin/python3 {}/bin/bp-extract.py -b gtc_restart.bp -o gtc_final.json -n gtc'.format(module_root)
     try_cmd (cmd)
 
     cmd = 'diff model/gtc_small.json gtc_final.json'
