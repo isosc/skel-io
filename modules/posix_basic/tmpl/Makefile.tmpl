@@ -1,0 +1,15 @@
+all:
+	../bin/trace2model.py 
+	skel template ../tmpl/CMakeLists_txt.tmpl --model ../model/grey-scott.json:posix-model --outfile ../repos/grey-scott/CMakeLists.txt
+	skel template ../tmpl/main_src_cxx.tmpl --model ../model/grey-scott.json:posix-model --outfile ../repos/grey-scott/skel_grey_scott.cxx
+#for $t_rank in range($self.models['posix-model']['num_ranks'])
+	skel template ../tmpl/rank_src_cxx.tmpl --arg rank:$t_rank --model ../model/grey-scott.json:posix-model --outfile ../repos/grey-scott/rank<%='{0:05d}'.format(t_rank)%>.cxx
+#end for
+	mkdir -p ../repos/grey-scott/build
+	cd ../repos/grey-scott/build && cmake .. && make && cd -
+
+refresh:
+	skel template ../tmpl/Makefile.tmpl --model ../model/grey-scott.json:posix-model --outfile Makefile
+
+
+

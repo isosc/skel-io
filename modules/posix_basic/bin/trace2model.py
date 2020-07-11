@@ -10,6 +10,8 @@ import yaml
 trace_dir = '../traces/grey-scott'
 outfile = '../model/grey-scott.json'
 allevents = [] # List of all events by rank
+posix_model = {}
+posix_model['name'] = 'grey_scott'
 
 print ("Extracting traces in {} to {}".format(trace_dir, outfile) )
 
@@ -35,7 +37,10 @@ for filename in trace_list:
         allevents.append (sorted(inyaml, key=lambda k: k['timestamp']) )
         print("Parsed", filename, "found", len(inyaml), "events")
 
+posix_model['events'] = allevents
+posix_model['num_ranks'] = len(allevents)
+
 with open (outfile, 'w') as out:
-    json.dump (allevents, out)
+    json.dump (posix_model, out)
 
 

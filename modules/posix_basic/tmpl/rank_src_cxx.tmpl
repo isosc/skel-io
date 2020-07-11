@@ -1,8 +1,9 @@
 \#include <iostream>
+\#include "mpi.h"
 
-void do_rank_00000 (){
+void do_rank_<%='{0:05d}'.format(int(self.arg['rank']))%> (){
 
-    std::cout << "Hello from rank 00000" << std::endl;
+    std::cout << "Hello from rank " << $self.arg['rank'] << std::endl;
 
 
 }
