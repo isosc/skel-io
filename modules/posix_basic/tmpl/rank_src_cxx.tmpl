@@ -1,9 +1,55 @@
+<%
+
+def to_fd_name(path):
+    # For now, just construct a fd variable name by taking objectionable chars out of the path
+    cleaned = path.replace('.', '_').replace ('/', '_').replace ('-', '_').replace ('+', 'x')
+    return "fd_{}".format(cleaned) 
+
+def emit_mpi_function(event):
+    return """
+    // emitting mpi function: {}
+""".format(event['function'])
+
+def emit_posix_function(event):
+    rvlist = []
+    rvlist.append("    // emitting posix function: {0}".format(event['function']))
+
+    if event['function'] == 'fopen64':
+        rvlist.append ('FILE* {} = fopen64("{}", "{}");'.format(to_fd_name(event['path']), event['path'], event['mode']))
+    elif event['function'] == 'open':
+        rvlist.append ('int {} = open("{}", {}, {});'.format(to_fd_name(event['pathname']), event['pathname'], event['flags'], event['mode']))
+    elif event['function'] == 'read':
+        rvlist.append ('rv = read({}, read_buf, {});'.format(to_fd_name(event['pathname']), event['return']))
+    return '\n'.join (rvlist)
+
+def emit_function(event):
+    if event['type'] == 'MPI':
+        return emit_mpi_function(event)
+    elif event['type'] == 'POSIX':
+        return emit_posix_function(event)
+    else:
+        raise NotImplementedError('-{}-'.format(event['type']))
+
+%>
+
 \#include <iostream>
 \#include "mpi.h"
+\#include <sys/types.h>
+\#include <sys/stat.h>
+\#include <fcntl.h>
+\#include <unistd.h>
 
 void do_rank_<%='{0:05d}'.format(int(self.arg['rank']))%> (){
 
+    int rv;
+    const int read_buf_size = 128 * 1024 * 1024;
+    char* read_buf = malloc (read_buf_size);
+
     std::cout << "Hello from rank " << $self.arg['rank'] << std::endl;
 
+
+#for $event in $self.models['posix-model']['events'][int($self.arg['rank'])]
+<%=emit_function(event)%>
+#end for
 
 }
