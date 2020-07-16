@@ -44,5 +44,8 @@ all:
 refresh:
 	skel template ../tmpl/Makefile.tmpl --model ../model/grey-scott.json:posix-model --outfile Makefile
 
+run:
+	cd ../repos/grey-scott/build && mpirun -np 36 -oversubscribe ./skel_grey_scott && cd -
+
 
 
