@@ -2,6 +2,7 @@ all:
 	../bin/trace2model.py 
 	skel template ../tmpl/CMakeLists_txt.tmpl --model ../model/grey-scott.json:posix-model --outfile ../repos/grey-scott/CMakeLists.txt
 	skel template ../tmpl/main_src_cxx.tmpl --model ../model/grey-scott.json:posix-model --outfile ../repos/grey-scott/skel_grey_scott.cxx
+	skel template ../tmpl/create_synthetic_data_cxx.tmpl --model ../model/grey-scott.json:posix-model --outfile ../repos/grey-scott/create_synthetic_data.cxx
 	skel template ../tmpl/rank_src_cxx.tmpl --arg rank:0 --model ../model/grey-scott.json:posix-model --outfile ../repos/grey-scott/rank00000.cxx
 	skel template ../tmpl/rank_src_cxx.tmpl --arg rank:1 --model ../model/grey-scott.json:posix-model --outfile ../repos/grey-scott/rank00001.cxx
 	skel template ../tmpl/rank_src_cxx.tmpl --arg rank:2 --model ../model/grey-scott.json:posix-model --outfile ../repos/grey-scott/rank00002.cxx

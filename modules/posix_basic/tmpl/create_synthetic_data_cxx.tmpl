@@ -1,0 +1,27 @@
+<%
+
+file_names = set()
+max_pos = {}
+
+for proc in self.models['posix-model']['events']:
+    proc_file_names = set()
+    proc_max_pos = {}
+    proc_cur_pos = {}
+    for event in proc:
+        if event['type'] == 'POSIX' and event['function'] == 'read':
+            proc_file_names.add (event['pathname'])
+            proc_cur_pos[event['pathname']] = proc_cur_pos.get(event['pathname'], 0) + event['return']
+            proc_max_pos[event['pathname']] = max (proc_cur_pos.get(event['pathname'], 0), proc_max_pos.get(event['pathname'], 0) )
+        #elif event['type'] == 'POSIX' and event['function'] == ''
+        file_names = file_names.union (proc_file_names)
+        for file in file_names:
+            max_pos[file] = max (max_pos.get(file, 0), proc_max_pos.get(file, 0))
+                
+
+%>
+
+#for $file_name in $file_names
+$file_name  $max_pos[$file_name]
+#end for
+
+
