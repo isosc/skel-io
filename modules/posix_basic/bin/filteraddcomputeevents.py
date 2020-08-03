@@ -8,10 +8,10 @@ import re
 
 model = '../model/grey-scott-posix-only.json'
 outfile = '../model/grey-scott-posix-compute.json'
-threshold = 100
+threshold = 1000
 allevents = [] # List of all events by rank
 posix_model = {}
-posix_model['name'] = 'grey_scott_posix_only'
+posix_model['name'] = 'grey_scott_posix_compute'
 posix_model['events'] = []
 print ("Filtering model {} to {}".format(model, outfile) )
 

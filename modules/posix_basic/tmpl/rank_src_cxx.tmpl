@@ -63,11 +63,20 @@ def emit_posix_function(event, indent=4, filter=[]):
 
     return '\n'.join (rvlist)
 
+
+def emit_skel_function(event, indent=4):
+
+    if event['function'] == 'compute':
+        return " "*indent + "std::this_thread::sleep_for(std::chrono::milliseconds({}) );".format(int(event['duration']/1000)) #convert micros to millis.
+
+
 def emit_function(event, filter=[]):
     if event['type'] == 'MPI':
         return emit_mpi_function(event)
     elif event['type'] == 'POSIX':
         return emit_posix_function(event, filter=filter)
+    elif event['type'] == 'SKEL':
+        return emit_skel_function(event)
     else:
         raise NotImplementedError('-{}-'.format(event['type']))
 
@@ -79,6 +88,8 @@ def emit_function(event, filter=[]):
 \#include <sys/stat.h>
 \#include <fcntl.h>
 \#include <unistd.h>
+\#include <chrono>
+\#include <thread>
 
 void do_rank_<%='{0:05d}'.format(int(self.arg['rank']))%> (){
 
