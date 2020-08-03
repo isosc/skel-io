@@ -16,6 +16,9 @@ add_executable(skel_$self.models['posix-model']['name'] skel_${self.models['posi
 	rank<%="{0:05d}".format(t_rank)%>.cxx
 #end for
 )
+
+add_executable(create_synthetic_data create_synthetic_data.cxx)
+
 #target_link_libraries(skel_$self.models['posix-model']['name'] adios2)
 target_link_libraries(skel_$self.models['posix-model']['name'] mpi)
 

@@ -1,18 +1,5 @@
 <%
-# Stashing these functions here for now, but should move most to a python module at some point.
-
-def to_fp_name(path, prefix='fp'):
-
-    if path == 'stdout':
-        return 'stdout'
-    if path == 'stderr':
-        return 'stderr'
-    if path == 'stdin':
-        return 'stdin'
-
-    # For now, just construct a fd variable name by taking objectionable chars out of the path
-    cleaned = path.replace('.', '_').replace ('/', '_').replace ('-', '_').replace ('+', 'x')
-    return "{}_{}".format(prefix, cleaned) 
+import common
 
 def emit_mpi_function(event, indent=4):
     rvlist = []
@@ -20,56 +7,67 @@ def emit_mpi_function(event, indent=4):
 
     return '\n'.join (rvlist)
 
-def emit_posix_function(event, indent=4):
+def emit_posix_function(event, indent=4, filter=[]):
     rvlist = []
     rvlist.append(' '*indent + "// emitting posix function: {0}".format(event['function']))
 
     if event['function'] == 'fopen64':
-        rvlist.append (' '*indent + 'FILE* {} = fopen64("{}", "{}");'.format(to_fp_name(event['path']), event['path'], event['mode']))
-        rvlist.append (' '*indent + 'if ({} == 0){{'.format(to_fp_name(event['path'])))
-        rvlist.append (' '*indent + '    fprintf(stderr, "Unable to open input file {}. Aborting.");'.format(event['path']))
-        rvlist.append (' '*indent + '    exit(1);')
-        rvlist.append (' '*indent + '}')
-        rvlist.append (' '*indent + 'int {} = fileno ({});'.format(to_fp_name(event['path'], prefix='fd'), to_fp_name(event['path']) ) )
+        if not event['path'] in filter:
+          rvlist.append (' '*indent + 'FILE* {} = fopen64("{}", "{}");'.format(common.to_fp_name(event['path']), common.to_fp_name(event['path']), event['mode']))
+          rvlist.append (' '*indent + 'if ({} == 0){{'.format(common.to_fp_name(event['path'])))
+          rvlist.append (' '*indent + '    fprintf(stderr, "Unable to open input file {}. Aborting.");'.format(event['path']))
+          rvlist.append (' '*indent + '    exit(1);')
+          rvlist.append (' '*indent + '}')
+          rvlist.append (' '*indent + 'int {} = fileno ({});'.format(common.to_fp_name(event['path'], prefix='fd'), common.to_fp_name(event['path']) ) )
     elif event['function'] == 'fopen':
-        rvlist.append (' '*indent + 'FILE* {} = fopen("{}", "{}");'.format(to_fp_name(event['path']), event['path'], event['mode']))
-        rvlist.append (' '*indent + 'if ({} == 0){{'.format(to_fp_name(event['path'])))
-        rvlist.append (' '*indent + '    fprintf(stderr, "Unable to open input file {}. Aborting.");'.format(event['path']))
-        rvlist.append (' '*indent + '    exit(1);')
-        rvlist.append (' '*indent + '}')
-        rvlist.append (' '*indent + 'int {} = fileno ({});'.format(to_fp_name(event['path'], prefix='fd'), to_fp_name(event['path']) ) )
+        if not event['path'] in filter:
+          rvlist.append (' '*indent + 'FILE* {} = fopen("{}", "{}");'.format(common.to_fp_name(event['path']), common.to_fp_name(event['path']), event['mode']))
+          rvlist.append (' '*indent + 'if ({} == 0){{'.format(common.to_fp_name(event['path'])))
+          rvlist.append (' '*indent + '    fprintf(stderr, "Unable to open input file {}. Aborting.");'.format(event['path']))
+          rvlist.append (' '*indent + '    exit(1);')
+          rvlist.append (' '*indent + '}')
+          rvlist.append (' '*indent + 'int {} = fileno ({});'.format(common.to_fp_name(event['path'], prefix='fd'), common.to_fp_name(event['path']) ) )
     elif event['function'] == 'fread':
-        rvlist.append (' '*indent + 'fread ({})'.format(to_fp_name(event['pathname']) ) )
+        if not event['pathname'] in filter:
+          rvlist.append (' '*indent + 'fread ({})'.format(common.to_fp_name(event['pathname']) ) )
     elif event['function'] == 'fwrite':
-        rvlist.append (' '*indent + 'fwrite (write_buf, {}, 1, {});'.format(event['return'], to_fp_name(event['pathname']) ) )
+        if not event['pathname'] in filter:
+          rvlist.append (' '*indent + 'fwrite (write_buf, {}, 1, {});'.format(event['return'], common.to_fp_name(event['pathname']) ) )
     elif event['function'] == 'fclose':
-        rvlist.append (' '*indent + '//fclose ({});'.format(to_fp_name(event['pathname']) ) )
+        if not event['pathname'] in filter:
+          rvlist.append (' '*indent + '//fclose ({});'.format(common.to_fp_name(event['pathname']) ) )
     elif event['function'] == 'open':
-        rvlist.append (' '*indent + 'int {} = open("{}", {}, {});'.format(to_fp_name(event['pathname'], prefix='fd'), event['pathname'], event['flags'], event['mode']))
-        rvlist.append (' '*indent + 'if ({} == 0){{'.format(to_fp_name(event['pathname'], prefix='fd')))
-        rvlist.append (' '*indent + '    fprintf(stderr, "Unable to open input file {}. Aborting.");'.format(event['pathname']))
-        rvlist.append (' '*indent + '    exit(1);')
-        rvlist.append (' '*indent + '}')
+        if not event['pathname'] in filter:
+          rvlist.append (' '*indent + 'int {} = open("{}", {}, {});'.format(common.to_fp_name(event['pathname'], prefix='fd'), event['pathname'], event['flags'], event['mode']))
+          rvlist.append (' '*indent + 'if ({} == 0){{'.format(common.to_fp_name(event['pathname'], prefix='fd')))
+          rvlist.append (' '*indent + '    fprintf(stderr, "Unable to open input file {}. Aborting.");'.format(event['pathname']))
+          rvlist.append (' '*indent + '    exit(1);')
+          rvlist.append (' '*indent + '}')
     elif event['function'] == 'lseek':
-        rvlist.append (' '*indent + 'rv = lseek({}, {}, {});'.format(to_fp_name(event['pathname'], prefix='fd'), event['offset'], event['whence']))
+        if not event['pathname'] in filter:
+          rvlist.append (' '*indent + 'rv = lseek({}, {}, {});'.format(common.to_fp_name(event['pathname'], prefix='fd'), event['offset'], event['whence']))
     elif event['function'] == 'read':
-        rvlist.append (' '*indent + 'rv = read({}, read_buf, {});'.format(to_fp_name(event['pathname'], prefix='fd'), event['return']))
+        if not event['pathname'] in filter:
+          rvlist.append (' '*indent + 'rv = read({}, read_buf, {});'.format(common.to_fp_name(event['pathname'], prefix='fd'), event['return']))
     elif event['function'] == 'write':
-        rvlist.append (' '*indent + 'rv = write({}, write_buf, {});'.format(to_fp_name(event['pathname'], prefix='fd'), event['return']))
+        if not event['pathname'] in filter:
+          rvlist.append (' '*indent + 'rv = write({}, write_buf, {});'.format(common.to_fp_name(event['pathname'], prefix='fd'), event['return']))
     elif event['function'] == 'writev': # Replace writev with write for now
-        rvlist.append (' '*indent + 'rv = write({}, write_buf, {});'.format(to_fp_name(event['pathname'], prefix='fd'), event['return']))
+        if not event['pathname'] in filter:
+          rvlist.append (' '*indent + 'rv = write({}, write_buf, {});'.format(common.to_fp_name(event['pathname'], prefix='fd'), event['return']))
     elif event['function'] == 'close':
-        rvlist.append (' '*indent + 'close ({});'.format(to_fp_name(event['pathname'], prefix='fd') ) )
+        if not event['pathname'] in filter:
+          rvlist.append (' '*indent + 'close ({});'.format(common.to_fp_name(event['pathname'], prefix='fd') ) )
     else:
         raise NotImplementedError('-{}-'.format(event['function']))
 
     return '\n'.join (rvlist)
 
-def emit_function(event):
+def emit_function(event, filter=[]):
     if event['type'] == 'MPI':
         return emit_mpi_function(event)
     elif event['type'] == 'POSIX':
-        return emit_posix_function(event)
+        return emit_posix_function(event, filter=filter)
     else:
         raise NotImplementedError('-{}-'.format(event['type']))
 
@@ -92,9 +90,12 @@ void do_rank_<%='{0:05d}'.format(int(self.arg['rank']))%> (){
 
     std::cout << "Hello from rank " << $self.arg['rank'] << std::endl;
 
+<%
+filter = self.models['tweak']['filter']
+%>
 
 #for $event in $self.models['posix-model']['events'][int($self.arg['rank'])]
-<%=emit_function(event)%>
+<%=emit_function(event, filter=filter)%>
 #end for
 
 }
