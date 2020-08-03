@@ -89,7 +89,25 @@ def emit_function(event, filter=[]):
 \#include <fcntl.h>
 \#include <unistd.h>
 \#include <chrono>
+\#include <ctime>
 \#include <thread>
+
+
+#define INIT_TIMER() \
+        auto arbitrary_time = std::chrono::system_clock::now();
+
+#define TIMER(tname) \
+	std::chrono::duration<double> tname = arbitrary_time - arbitrary_time; \
+        std::chrono::system_clock::time_point tname <%='##'%> _start_time;
+
+#define START_TIMER(tname) \
+	tname <%='##'%> _start_time = std::chrono::system_clock::now();
+
+#define STOP_TIMER(tname) \
+	tname += std::chrono::system_clock::now() - tname <%='##'%> _start_time; 
+
+#define REPORT_TIMER(tname) \
+    std::cout <<  <%='#'%>tname << ": " << tname.count() << std::endl;
 
 void do_rank_<%='{0:05d}'.format(int(self.arg['rank']))%> (){
 
@@ -99,7 +117,16 @@ void do_rank_<%='{0:05d}'.format(int(self.arg['rank']))%> (){
     char* write_buf = (char*)(malloc (write_buf_size) );
     char* read_buf = (char*)(malloc (read_buf_size) );
 
-    std::cout << "Hello from rank " << $self.arg['rank'] << std::endl;
+    // Set up timers
+    INIT_TIMER();
+    TIMER(total_timer);
+    TIMER(open_timer);
+    TIMER(read_timer);
+    TIMER(write_timer);
+    TIMER(close_timer);
+
+    START_TIMER(total_timer);
+
 
 <%
 filter = self.models['tweak']['filter']
@@ -109,4 +136,6 @@ filter = self.models['tweak']['filter']
 <%=emit_function(event, filter=filter)%>
 #end for
 
+    STOP_TIMER(total_timer);
+    REPORT_TIMER(total_timer);
 }
