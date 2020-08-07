@@ -10,57 +10,77 @@ def emit_mpi_function(event, indent=4):
 def emit_posix_function(event, indent=4, filter=[]):
     rvlist = []
     rvlist.append(' '*indent + "// emitting posix function: {0}".format(event['function']))
+    rvlist.append(' '*indent + "START_TIMER(posix_total_timer);")
 
     if event['function'] == 'fopen64':
         if not event['path'] in filter:
+          rvlist.append(' '*indent + "START_TIMER(open_timer);")
           rvlist.append (' '*indent + 'FILE* {} = fopen64("{}", "{}");'.format(common.to_fp_name(event['path']), common.to_fp_name(event['path']), event['mode']))
           rvlist.append (' '*indent + 'if ({} == 0){{'.format(common.to_fp_name(event['path'])))
           rvlist.append (' '*indent + '    fprintf(stderr, "Unable to open input file {}. Aborting.");'.format(event['path']))
           rvlist.append (' '*indent + '    exit(1);')
           rvlist.append (' '*indent + '}')
           rvlist.append (' '*indent + 'int {} = fileno ({});'.format(common.to_fp_name(event['path'], prefix='fd'), common.to_fp_name(event['path']) ) )
+          rvlist.append(' '*indent + "STOP_TIMER(open_timer);")
     elif event['function'] == 'fopen':
         if not event['path'] in filter:
+          rvlist.append(' '*indent + "START_TIMER(open_timer);")
           rvlist.append (' '*indent + 'FILE* {} = fopen("{}", "{}");'.format(common.to_fp_name(event['path']), common.to_fp_name(event['path']), event['mode']))
           rvlist.append (' '*indent + 'if ({} == 0){{'.format(common.to_fp_name(event['path'])))
           rvlist.append (' '*indent + '    fprintf(stderr, "Unable to open input file {}. Aborting.");'.format(event['path']))
           rvlist.append (' '*indent + '    exit(1);')
           rvlist.append (' '*indent + '}')
           rvlist.append (' '*indent + 'int {} = fileno ({});'.format(common.to_fp_name(event['path'], prefix='fd'), common.to_fp_name(event['path']) ) )
+          rvlist.append(' '*indent + "STOP_TIMER(open_timer);")
     elif event['function'] == 'fread':
         if not event['pathname'] in filter:
+          rvlist.append(' '*indent + "START_TIMER(read_timer);")
           rvlist.append (' '*indent + 'fread ({})'.format(common.to_fp_name(event['pathname']) ) )
+          rvlist.append(' '*indent + "STOP_TIMER(read_timer);")
     elif event['function'] == 'fwrite':
         if not event['pathname'] in filter:
+          rvlist.append(' '*indent + "START_TIMER(write_timer);")
           rvlist.append (' '*indent + 'fwrite (write_buf, {}, 1, {});'.format(event['return'], common.to_fp_name(event['pathname']) ) )
+          rvlist.append(' '*indent + "STOP_TIMER(write_timer);")
     elif event['function'] == 'fclose':
         if not event['pathname'] in filter:
           rvlist.append (' '*indent + '//fclose ({});'.format(common.to_fp_name(event['pathname']) ) )
     elif event['function'] == 'open':
         if not event['pathname'] in filter:
+          rvlist.append(' '*indent + "START_TIMER(open_timer);")
           rvlist.append (' '*indent + 'int {} = open("{}", {}, {});'.format(common.to_fp_name(event['pathname'], prefix='fd'), event['pathname'], event['flags'], event['mode']))
           rvlist.append (' '*indent + 'if ({} == 0){{'.format(common.to_fp_name(event['pathname'], prefix='fd')))
           rvlist.append (' '*indent + '    fprintf(stderr, "Unable to open input file {}. Aborting.");'.format(event['pathname']))
           rvlist.append (' '*indent + '    exit(1);')
           rvlist.append (' '*indent + '}')
+          rvlist.append(' '*indent + "STOP_TIMER(open_timer);")
     elif event['function'] == 'lseek':
         if not event['pathname'] in filter:
           rvlist.append (' '*indent + 'rv = lseek({}, {}, {});'.format(common.to_fp_name(event['pathname'], prefix='fd'), event['offset'], event['whence']))
     elif event['function'] == 'read':
         if not event['pathname'] in filter:
+          rvlist.append(' '*indent + "START_TIMER(read_timer);")
           rvlist.append (' '*indent + 'rv = read({}, read_buf, {});'.format(common.to_fp_name(event['pathname'], prefix='fd'), event['return']))
+          rvlist.append(' '*indent + "STOP_TIMER(read_timer);")
     elif event['function'] == 'write':
         if not event['pathname'] in filter:
+          rvlist.append(' '*indent + "START_TIMER(write_timer);")
           rvlist.append (' '*indent + 'rv = write({}, write_buf, {});'.format(common.to_fp_name(event['pathname'], prefix='fd'), event['return']))
+          rvlist.append(' '*indent + "STOP_TIMER(write_timer);")
     elif event['function'] == 'writev': # Replace writev with write for now
         if not event['pathname'] in filter:
+          rvlist.append(' '*indent + "START_TIMER(write_timer);")
           rvlist.append (' '*indent + 'rv = write({}, write_buf, {});'.format(common.to_fp_name(event['pathname'], prefix='fd'), event['return']))
+          rvlist.append(' '*indent + "STOP_TIMER(write_timer);")
     elif event['function'] == 'close':
         if not event['pathname'] in filter:
+          rvlist.append(' '*indent + "START_TIMER(close_timer);")
           rvlist.append (' '*indent + 'close ({});'.format(common.to_fp_name(event['pathname'], prefix='fd') ) )
+          rvlist.append(' '*indent + "STOP_TIMER(close_timer);")
     else:
         raise NotImplementedError('-{}-'.format(event['function']))
 
+    rvlist.append(' '*indent + "STOP_TIMER(posix_total_timer);")
     return '\n'.join (rvlist)
 
 
@@ -83,6 +103,7 @@ def emit_function(event, filter=[]):
 %>
 
 \#include <iostream>
+\#include <fstream>
 \#include "mpi.h"
 \#include <sys/types.h>
 \#include <sys/stat.h>
@@ -91,25 +112,38 @@ def emit_function(event, filter=[]):
 \#include <chrono>
 \#include <ctime>
 \#include <thread>
+\#include <limits>
 
+extern std::string logfilename;
+<%
+timer_list = [
+'total',
+'posix_total',
+'open',
+'read',
+'write',
+'close'
+]
+%>
 
-#define INIT_TIMER() \
-        auto arbitrary_time = std::chrono::system_clock::now();
+#define INIT_TIMERS() \
+    auto arbitrary_time = std::chrono::system_clock::now();
 
-#define TIMER(tname) \
-	std::chrono::duration<double> tname = arbitrary_time - arbitrary_time; \
-        std::chrono::system_clock::time_point tname <%='##'%> _start_time;
+#define DEFINE_TIMER(tname) \
+    std::chrono::duration<double> tname = arbitrary_time - arbitrary_time; \
+    std::chrono::system_clock::time_point tname <%='##'%> _start_time;
 
 #define START_TIMER(tname) \
-	tname <%='##'%> _start_time = std::chrono::system_clock::now();
+    tname <%='##'%> _start_time = std::chrono::system_clock::now();
 
 #define STOP_TIMER(tname) \
-	tname += std::chrono::system_clock::now() - tname <%='##'%> _start_time; 
+    tname += std::chrono::system_clock::now() - tname <%='##'%> _start_time; 
 
-#define REPORT_TIMER(tname) \
+#define PRINT_TIMER(tname) \
     std::cout <<  <%='#'%>tname << ": " << tname.count() << std::endl;
 
-void do_rank_<%='{0:05d}'.format(int(self.arg['rank']))%> (){
+
+void do_rank_<%='{0:05d}'.format(int(self.arg['rank']))%> (MPI_Comm comm){
 
     int rv;
     const int read_buf_size = 128 * 1024 * 1024;
@@ -117,13 +151,15 @@ void do_rank_<%='{0:05d}'.format(int(self.arg['rank']))%> (){
     char* write_buf = (char*)(malloc (write_buf_size) );
     char* read_buf = (char*)(malloc (read_buf_size) );
 
+    int size, rank;
+    MPI_Comm_size (comm, &size);
+    MPI_Comm_rank (comm, &rank);
+
     // Set up timers
-    INIT_TIMER();
-    TIMER(total_timer);
-    TIMER(open_timer);
-    TIMER(read_timer);
-    TIMER(write_timer);
-    TIMER(close_timer);
+    INIT_TIMERS();
+#for $timer in $timer_list
+    DEFINE_TIMER(${timer}_timer);
+#end for
 
     START_TIMER(total_timer);
 
@@ -137,5 +173,46 @@ filter = self.models['tweak']['filter']
 #end for
 
     STOP_TIMER(total_timer);
-    REPORT_TIMER(total_timer);
+    PRINT_TIMER(total_timer);
+
+    // Timer report generated from cheetah timer list instead of clunky C++ macro
+
+    // Gather timer info from all ranks to 0
+    int sendcount = 1;
+    int recvcount = 1;
+    unsigned int logrank = 0;
+#for $timer in $timer_list
+    double * all_${timer}_timer = (double*) malloc (size * sizeof(double));
+    MPI_Gather(&${timer}_timer, sendcount, MPI_DOUBLE, all_${timer}_timer, recvcount, MPI_DOUBLE, logrank, comm);
+    
+    // Compute stats
+    double ${timer}_sum = 0.0;
+    double ${timer}_min = std::numeric_limits<double>::max();
+    double ${timer}_max = 0.0;
+    for (int i = 0; i < size; i++){
+        ${timer}_sum += all_${timer}_timer[i];
+        ${timer}_min = std::min(${timer}_min, all_${timer}_timer[i]);
+        ${timer}_max = std::max(${timer}_max, all_${timer}_timer[i]);
+    }
+    double ${timer}_mean = ${timer}_sum / size;
+#end for
+
+    // One process will write the log file
+    if (rank == logrank) {
+        // Dump json file 
+        std::ofstream logfile;
+        logfile.open (logfilename);
+        logfile << "\"timer_set\": [\n";
+#for $timer in $timer_list
+        logfile << "  {\"name\": \"${timer}\", ";
+        logfile << "\"mean\": " << ${timer}_mean << ", ";
+        logfile << "\"min\": " << ${timer}_min << ", ";
+        logfile << "\"max\": " << ${timer}_max; ## << ", ";
+        logfile << "}," << std::endl;
+#end for
+        logfile << "]," << std::endl;
+        logfile << "\"comm_size\": " << size << std::endl;
+        logfile.close();
+
+    }
 }
