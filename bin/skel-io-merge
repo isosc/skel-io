@@ -1,0 +1,28 @@
+#!/usr/bin/env python3
+
+import json
+import os.path
+
+def main():
+
+    from_json = 'perf.json'
+    to_json = 'all.json'
+
+    print ("Merging {} into {}".format(from_json, to_json) )
+
+    dest_doc = []
+
+    if os.path.isfile(to_json):
+        with open(to_json, 'r') as tofile:
+            dest_doc = json.load (tofile)
+
+    with open(from_json, 'r') as fromfile:
+        source_doc = json.load (fromfile)
+
+    dest_doc.append (source_doc)
+
+    with open(to_json, 'w') as tofile:
+        json.dump (tofile, dest_doc)
+
+if __name__=="__main__":
+    main()

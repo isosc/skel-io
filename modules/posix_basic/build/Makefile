@@ -47,9 +47,18 @@ all:
 refresh:
 	skel template ../tmpl/Makefile.tmpl --model ../model/grey-scott-posix-compute.json:posix-model,../model/tweak.json:tweak --outfile Makefile
 
-run:
-	cd ../repos/grey-scott/build && ./create_synthetic_data && cd -
-	cd ../repos/grey-scott/build && mpirun -np 36 -oversubscribe ./skel_grey_scott_posix_compute && cd -
 
+
+create_synthetic:
+	cd ../repos/grey-scott/build && ./create_synthetic_data && cd -
+
+run:
+	cd ../repos/grey-scott/build && mpirun -np 36 -oversubscribe ./skel_grey_scott_posix_compute && cd -
+	cd ../repos/grey-scott/build && ~/sw/skel-io/bin/skel-io-merge && cd -
+
+run-tau:
+	cd ../repos/grey-scott/build && mpirun -np 36 -oversubscribe tau_exec -T mpi,pthread -io -skel ./skel_grey_scott_posix_compute && cd -
+
+.PHONY: create_synthetic run run-tau
 
 

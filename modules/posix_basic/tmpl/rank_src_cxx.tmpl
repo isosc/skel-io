@@ -199,19 +199,24 @@ filter = self.models['tweak']['filter']
 
     // One process will write the log file
     if (rank == logrank) {
+<%first=True%>
         // Dump json file 
         std::ofstream logfile;
         logfile.open (logfilename);
-        logfile << "\"timer_set\": [\n";
+        logfile << "{\"timer_set\": [\n";
 #for $timer in $timer_list
+#if not $first
+        logfile << "," << std::endl;
+#end if
+<%first=False%>
         logfile << "  {\"name\": \"${timer}\", ";
         logfile << "\"mean\": " << ${timer}_mean << ", ";
         logfile << "\"min\": " << ${timer}_min << ", ";
         logfile << "\"max\": " << ${timer}_max; ## << ", ";
-        logfile << "}," << std::endl;
+        logfile << "}";
 #end for
         logfile << "]," << std::endl;
-        logfile << "\"comm_size\": " << size << std::endl;
+        logfile << "\"comm_size\": " << size << "}" << std::endl;
         logfile.close();
 
     }
