@@ -11,18 +11,28 @@ def main():
     print ("Merging {} into {}".format(from_json, to_json) )
 
     dest_doc = []
+    
+    print("a")
 
     if os.path.isfile(to_json):
+        print ("opening {}".format(to_json))
         with open(to_json, 'r') as tofile:
             dest_doc = json.load (tofile)
+
+    print("b")
 
     with open(from_json, 'r') as fromfile:
         source_doc = json.load (fromfile)
 
+    print("c")
+
     dest_doc.append (source_doc)
 
+    print("d")
+
     with open(to_json, 'w') as tofile:
-        json.dump (tofile, dest_doc)
+        print (dest_doc)
+        json.dump (dest_doc, tofile)
 
 if __name__=="__main__":
     main()
