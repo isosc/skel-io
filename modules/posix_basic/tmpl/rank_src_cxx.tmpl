@@ -115,6 +115,7 @@ def emit_function(event, filter=[]):
 \#include <limits>
 
 extern std::string logfilename;
+extern std::string tag;
 <%
 timer_list = [
 'total',
@@ -216,6 +217,7 @@ filter = self.models['tweak']['filter']
         logfile << "}";
 #end for
         logfile << "]," << std::endl;
+        logfile << "\"tag\": \"" << tag << "\"," << std::endl;
         logfile << "\"comm_size\": " << size << "}" << std::endl;
         logfile.close();
 

@@ -59,6 +59,10 @@ run:
 run-tau:
 	cd ../repos/grey-scott/build && mpirun -np 36 -oversubscribe tau_exec -T mpi,pthread -io -skel ./skel_grey_scott_posix_compute && cd -
 
-.PHONY: create_synthetic run run-tau
+plot:
+	cd ../repos/grey-scott/build && ~/sw/skel-io/bin/skel-io-plot && cd -
+	
+
+.PHONY: create_synthetic run run-tau plot
 
 
