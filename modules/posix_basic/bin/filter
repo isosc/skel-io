@@ -1,0 +1,108 @@
+#!/usr/bin/env python3
+
+import argparse
+import glob
+import json
+import re
+import sys
+
+
+def commandline (argv):
+  parser = argparse.ArgumentParser(prog='filter')
+  subparsers = parser.add_subparsers(help='sub help', dest="subcommand")
+
+  _parser_template = subparsers.add_parser('posixonly', help="Remove all but the posix events from the parsed tau output")
+  _parser_template.add_argument('model')
+  _parser_template.add_argument('--outfile', dest="outfile", required="true")
+
+  _parser_template = subparsers.add_parser('addcompute', help="Insert compute events into sufficiently large gaps between existing events")
+  _parser_template.add_argument('model')
+  _parser_template.add_argument('--outfile', dest="outfile", required="true")
+
+  return (parser.parse_args(argv[1:])) # Skip the program name, and pass the rest to the parser
+
+
+
+def main():
+
+    config = commandline (sys.argv)
+    print (config)
+
+    if config.subcommand == 'posixonly':
+        do_posixonly(config)
+    elif config.subcommand == 'addcompute':
+        do_addcompute(config)
+
+
+def do_posixonly(config):
+
+    #usage: filterposixonly <model> -o <outfile>
+
+    model = config.model
+    outfile = config.outfile
+    allevents = [] # List of all events by rank
+    posix_model = {}
+    posix_model['name'] = 'grey_scott_posix_only'
+    posix_model['events'] = []
+    print ("Filtering model {} to {}".format(model, outfile) )
+
+    # Parse the yaml
+    with open(model, 'r') as f: # open in readonly mode
+        doc = json.load(f)
+
+        for rank_events in doc['events']:
+            posix_model['events'].append ([event for event in rank_events if event['type'] == 'POSIX'] )
+            print("Parsed a rank, found ", len(posix_model['events']), " posix events")
+
+    posix_model['num_ranks'] = doc['num_ranks']
+
+    with open (outfile, 'w') as out:
+        json.dump (posix_model, out)
+
+
+def do_addcompute(config):
+    #usage: filteraddcomputeevents <model> -o <outfile>
+
+    #model = '../model/grey-scott-posix-only.json'
+    #outfile = '../model/grey-scott-posix-compute.json'
+    model = config.model
+    outfile = config.outfile
+    threshold = 1000
+    allevents = [] # List of all events by rank
+    posix_model = {}
+    posix_model['name'] = 'grey_scott_posix_compute'
+    posix_model['events'] = []
+    print ("Filtering model {} to {}".format(model, outfile) )
+
+    # Parse the yaml
+    with open(model, 'r') as f: # open in readonly mode
+        doc = json.load(f)
+
+        for rank_events in doc['events']:
+            # Insert compute events into this rank's event list
+            print ("Preparing to add compute events to {} existing events".format (len(rank_events) ) )
+            augmented_events = []
+            augmented_events.append (rank_events[0])
+            for this_one, previous_one in zip(rank_events[1:], rank_events):
+                gap = this_one['timestamp'] - (previous_one['timestamp'] + previous_one['duration'])
+                if gap < threshold:
+                    augmented_events.append (this_one)
+                    continue # Skip small gaps
+                compute_event = {}
+                compute_event['type'] = 'SKEL'
+                compute_event['function'] = 'compute'
+                compute_event['duration'] = gap
+                augmented_events.append (compute_event)
+                augmented_events.append (this_one)
+            print ("Total {} events after augmenting".format(len(augmented_events) ) )
+            posix_model['events'].append (augmented_events)
+            print("Parsed a rank, found ", len(augmented_events), " posix events")
+
+    posix_model['num_ranks'] = doc['num_ranks']
+
+    with open (outfile, 'w') as out:
+        json.dump (posix_model, out)
+
+
+if __name__=="__main__":
+    main()
