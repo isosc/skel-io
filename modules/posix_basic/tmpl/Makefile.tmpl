@@ -1,5 +1,18 @@
 grey-scott:
 	../bin/trace2model.py 
+	#../bin/filter posixonly ../model/grey-scott.json --outfile ../model/grey-scott-posix-only.json
+	../bin/filter addcompute ../model/grey-scott.json --outfile ../model/grey-scott-compute.json
+	PYTHONPATH=\${PWD}/../tmpl:\${PYTHONPATH} skel template ../tmpl/CMakeLists_txt.tmpl --model ../model/grey-scott-compute.json:posix-model,../model/tweak.json:tweak --outfile ../repos/grey-scott/CMakeLists.txt
+	PYTHONPATH=\${PWD}/../tmpl:\${PYTHONPATH} skel template ../tmpl/main_src_cxx.tmpl --model ../model/grey-scott-compute.json:posix-model,../model/tweak.json:tweak --outfile ../repos/grey-scott/skel_${self.models['posix-model']['name']}.cxx
+	PYTHONPATH=\${PWD}/../tmpl:\${PYTHONPATH} skel template ../tmpl/create_synthetic_data_cxx.tmpl --model ../model/grey-scott-compute.json:posix-model,../model/tweak.json:tweak --outfile ../repos/grey-scott/create_synthetic_data.cxx
+#for $t_rank in range($self.models['posix-model']['num_ranks'])
+	PYTHONPATH=\${PWD}/../tmpl:\${PYTHONPATH} skel template ../tmpl/rank_src_cxx.tmpl --arg rank:$t_rank --model ../model/grey-scott-compute.json:posix-model,../model/tweak.json:tweak --outfile ../repos/grey-scott/rank<%='{0:05d}'.format(t_rank)%>.cxx
+#end for
+	mkdir -p ../repos/grey-scott/build
+	cd ../repos/grey-scott/build && cmake .. && make && cd -
+
+grey-scott-posix-only:
+	../bin/trace2model.py 
 	../bin/filter posixonly ../model/grey-scott.json --outfile ../model/grey-scott-posix-only.json
 	../bin/filter addcompute ../model/grey-scott-posix-only.json --outfile ../model/grey-scott-posix-compute.json
 	PYTHONPATH=\${PWD}/../tmpl:\${PYTHONPATH} skel template ../tmpl/CMakeLists_txt.tmpl --model ../model/grey-scott-posix-compute.json:posix-model,../model/tweak.json:tweak --outfile ../repos/grey-scott/CMakeLists.txt
@@ -44,6 +57,6 @@ plot:
 	cd ../repos/grey-scott/build && ~/sw/skel-io/bin/skel-io-plot && cd -
 	
 
-.PHONY: create_synthetic run run-tau plot
+.PHONY: refresh create_synthetic run run-tau plot
 
 

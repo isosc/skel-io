@@ -1,9 +1,47 @@
 <%
 import common
 
+def emit_mpi_comm(event):
+    return "COMM_{}".format(event['comm'])
+
 def emit_mpi_function(event, indent=4):
     rvlist = []
     rvlist.append(' '*indent + "// emitting mpi function: {}".format(event['function']))
+
+    if event['function'] == 'MPI_Barrier':
+        rvlist.append (''*indent + '{')
+        rvlist.append (''*indent + 'MPI_Comm comm = ' + emit_mpi_comm(event) +';')
+        rvlist.append (''*indent + 'MPI_Barrier();')
+        rvlist.append (''*indent + '}')
+    elif event['function'] == 'MPI_Bcast':
+        rvlist.append (''*indent + '{')
+        rvlist.append (''*indent + 'int count = {};'.format (event['size']))
+        rvlist.append (''*indent + 'MPI_Datatype datatype = MPI_BYTE;')
+        rvlist.append (''*indent + 'MPI_Comm comm = ' + emit_mpi_comm(event) +';')
+        rvlist.append (''*indent + 'MPI_Bcast(sendbuf, count, datatype, root, comm);')
+        rvlist.append (''*indent + '}')
+    elif event['function'] == 'MPI_Cart_create':
+        rvlist.append (''*indent + '//MPI_Cart_create();')
+    elif event['function'] == 'MPI_Comm_split':
+        rvlist.append (''*indent + 'color = {};'.format(event['color']))
+        rvlist.append (''*indent + 'key = {};'.format(event['key']))
+        rvlist.append (''*indent + 'MPI_Comm_split(COMM_{}, color, key, COMM_{});'.format(event['comm_in'], event['comm_out']))
+    elif event['function'] == 'MPI_Comm_dup':
+        rvlist.append (''*indent + 'MPI_Comm COMM_{};'.format(event['comm_out']))
+        rvlist.append (''*indent + 'MPI_Comm_dup(COMM_{}, &COMM_{});'.format(event['comm_in'], event['comm_out']))
+    elif event['function'] == 'MPI_Gather':
+        rvlist.append (''*indent + '//MPI_Gather(sendbuf, sendcount, sendtype, recvbuf, recvcount, recvtype, root, comm);')
+    elif event['function'] == 'MPI_Gatherv':
+        rvlist.append (''*indent + '{')
+        rvlist.append (''*indent + 'MPI_Datatype sendtype = MPI_BYTE;')
+        rvlist.append (''*indent + 'int sendcount = {};'.format (event['mean']))
+        rvlist.append (''*indent + 'MPI_Datatype recvtype = MPI_BYTE;')
+        rvlist.append (''*indent + 'int recvcount = {};'.format (event['mean']))
+        rvlist.append (''*indent + 'MPI_Comm comm = ' + emit_mpi_comm(event) +';')
+        rvlist.append (''*indent + 'MPI_Gather(sendbuf, sendcount, sendtype, recvbuf, recvcount, recvtype, root, comm);')
+        rvlist.append (''*indent + '}')
+    else:
+        raise NotImplementedError('-{}-'.format(event['function']))
 
     return '\n'.join (rvlist)
 
@@ -147,10 +185,16 @@ timer_list = [
 void do_rank_<%='{0:05d}'.format(int(self.arg['rank']))%> (MPI_Comm comm){
 
     int rv;
+    int root = 0; // Use rank zero unless we need something else
+    int key, color; // for MPI_Comm_split
     const int read_buf_size = 128 * 1024 * 1024;
     const int write_buf_size = 128 * 1024 * 1024;
+    const int recv_buf_size = 128 * 1024 * 1024;
+    const int send_buf_size = 128 * 1024 * 1024;
     char* write_buf = (char*)(malloc (write_buf_size) );
     char* read_buf = (char*)(malloc (read_buf_size) );
+    char* sendbuf = (char*)(malloc (send_buf_size) );
+    char* recvbuf = (char*)(malloc (recv_buf_size) );
 
     int size, rank;
     MPI_Comm_size (comm, &size);
