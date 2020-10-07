@@ -1,8 +1,11 @@
 <%
 import common
 
-def emit_mpi_comm(event):
-    return "COMM_{}".format(event['comm'])
+def stringify_list(lst):
+    return map (str, lst)
+
+def emit_mpi_comm(event, field='comm'):
+    return "COMM_{}".format(event[field])
 
 def emit_mpi_function(event, indent=4):
     rvlist = []
@@ -11,7 +14,7 @@ def emit_mpi_function(event, indent=4):
     if event['function'] == 'MPI_Barrier':
         rvlist.append (''*indent + '{')
         rvlist.append (''*indent + 'MPI_Comm comm = ' + emit_mpi_comm(event) +';')
-        rvlist.append (''*indent + 'MPI_Barrier();')
+        rvlist.append (''*indent + 'MPI_Barrier(comm);')
         rvlist.append (''*indent + '}')
     elif event['function'] == 'MPI_Bcast':
         rvlist.append (''*indent + '{')
@@ -21,7 +24,15 @@ def emit_mpi_function(event, indent=4):
         rvlist.append (''*indent + 'MPI_Bcast(sendbuf, count, datatype, root, comm);')
         rvlist.append (''*indent + '}')
     elif event['function'] == 'MPI_Cart_create':
-        rvlist.append (''*indent + '//MPI_Cart_create();')
+        rvlist.append (''*indent + '{')
+        rvlist.append (''*indent + 'int ndims = {};'.format (event['ndims']))
+        rvlist.append (''*indent + 'int dims[] = {{{}}};'.format (','.join(stringify_list(event['dims']))))
+        rvlist.append (''*indent + 'int periods[] = {{{}}};'.format (','.join(stringify_list(event['periods']))))
+        rvlist.append (''*indent + 'int reorder = {};'.format (event['reorder']))
+        rvlist.append (''*indent + 'MPI_Comm comm_new = ' + emit_mpi_comm(event, field='comm_out') +';')
+        rvlist.append (''*indent + 'MPI_Comm comm_old = ' + emit_mpi_comm(event) +';')
+        rvlist.append (''*indent + 'MPI_Cart_create(comm_old, ndims, dims, periods, reorder, &comm_new);')
+        rvlist.append (''*indent + '}')
     elif event['function'] == 'MPI_Comm_split':
         rvlist.append (''*indent + 'color = {};'.format(event['color']))
         rvlist.append (''*indent + 'key = {};'.format(event['key']))
