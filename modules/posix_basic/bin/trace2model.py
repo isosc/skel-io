@@ -3,12 +3,13 @@
 import glob
 import json
 import re
+import sys
 import yaml
 
-#usage: trace2model <trace_dir> -o <outfile>
+#usage: trace2model <trace_dir> <outfile>
 
-trace_dir = '../traces/grey-scott'
-outfile = '../model/grey-scott.json'
+trace_dir = sys.argv[1]
+outfile = sys.argv[2]
 allevents = [] # List of all events by rank
 posix_model = {}
 posix_model['name'] = 'grey_scott'
