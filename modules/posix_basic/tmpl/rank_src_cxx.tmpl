@@ -156,71 +156,101 @@ def emit_posix_function(event, indent=4, filter=[]):
     rvlist.append(' '*indent + "// emitting posix function: {0}".format(event['function']))
     rvlist.append(' '*indent + "START_TIMER(posix_total_timer);")
 
+    ##################################
     if event['function'] == 'fopen64':
         if not event['path'] in filter:
           rvlist.append(' '*indent + "START_TIMER(open_timer);")
-          rvlist.append (' '*indent + 'FILE* {} = fopen64("{}", "{}");'.format(common.to_fp_name(event['path']), common.to_fp_name(event['path']), event['mode']))
+          file_name = common.to_fp_name(event['path'])
+          decl = "FILE* "
+          if file_name in declared_set:
+            decl = ""
+          else:
+            declared_set.add (file_name)
+          rvlist.append (' '*indent + '{}{} = fopen64("{}", "{}");'.format(decl, common.to_fp_name(event['path']), common.to_fp_name(event['path']), event['mode']))
           rvlist.append (' '*indent + 'if ({} == 0){{'.format(common.to_fp_name(event['path'])))
           rvlist.append (' '*indent + '    fprintf(stderr, "Unable to open input file {}. Aborting.");'.format(event['path']))
           rvlist.append (' '*indent + '    exit(1);')
           rvlist.append (' '*indent + '}')
           rvlist.append (' '*indent + 'int {} = fileno ({});'.format(common.to_fp_name(event['path'], prefix='fd'), common.to_fp_name(event['path']) ) )
           rvlist.append(' '*indent + "STOP_TIMER(open_timer);")
+    ##################################
     elif event['function'] == 'fopen':
         if not event['path'] in filter:
           rvlist.append(' '*indent + "START_TIMER(open_timer);")
-          rvlist.append (' '*indent + 'FILE* {} = fopen("{}", "{}");'.format(common.to_fp_name(event['path']), common.to_fp_name(event['path']), event['mode']))
+          file_name = common.to_fp_name(event['path'])
+          decl = "FILE* "
+          if file_name in declared_set:
+            decl = ""
+          else:
+            declared_set.add (file_name)
+          rvlist.append (' '*indent + '{}{} = fopen("{}", "{}");'.format(decl, common.to_fp_name(event['path']), common.to_fp_name(event['path']), event['mode']))
           rvlist.append (' '*indent + 'if ({} == 0){{'.format(common.to_fp_name(event['path'])))
           rvlist.append (' '*indent + '    fprintf(stderr, "Unable to open input file {}. Aborting.");'.format(event['path']))
           rvlist.append (' '*indent + '    exit(1);')
           rvlist.append (' '*indent + '}')
           rvlist.append (' '*indent + 'int {} = fileno ({});'.format(common.to_fp_name(event['path'], prefix='fd'), common.to_fp_name(event['path']) ) )
           rvlist.append(' '*indent + "STOP_TIMER(open_timer);")
+    ##################################
     elif event['function'] == 'fread':
         if not event['pathname'] in filter:
           rvlist.append(' '*indent + "START_TIMER(read_timer);")
           rvlist.append (' '*indent + 'fread ({})'.format(common.to_fp_name(event['pathname']) ) )
           rvlist.append(' '*indent + "STOP_TIMER(read_timer);")
+    ###################################
     elif event['function'] == 'fwrite':
         if not event['pathname'] in filter:
           rvlist.append(' '*indent + "START_TIMER(write_timer);")
           rvlist.append (' '*indent + 'fwrite (write_buf, {}, 1, {});'.format(event['return'], common.to_fp_name(event['pathname']) ) )
           rvlist.append(' '*indent + "STOP_TIMER(write_timer);")
+    ###################################
     elif event['function'] == 'fclose':
         if not event['pathname'] in filter:
           rvlist.append (' '*indent + '//fclose ({});'.format(common.to_fp_name(event['pathname']) ) )
+    #################################
     elif event['function'] == 'open':
         if not event['pathname'] in filter:
           rvlist.append(' '*indent + "START_TIMER(open_timer);")
-          rvlist.append (' '*indent + 'int {} = open("{}", {}, {});'.format(common.to_fp_name(event['pathname'], prefix='fd'), event['pathname'], event['flags'], event['mode']))
+          decl = "int "
+          filename = common.to_fp_name(event['pathname'])
+          if filename in declared_set:
+            decl = ""
+          else:
+            declared_set.add(filename)
+          rvlist.append (' '*indent + '{}{} = open("{}", {}, {});'.format(decl, common.to_fp_name(event['pathname'], prefix='fd'), event['pathname'], event['flags'], event['mode']))
           rvlist.append (' '*indent + 'if ({} == 0){{'.format(common.to_fp_name(event['pathname'], prefix='fd')))
           rvlist.append (' '*indent + '    fprintf(stderr, "Unable to open input file {}. Aborting.");'.format(event['pathname']))
           rvlist.append (' '*indent + '    exit(1);')
           rvlist.append (' '*indent + '}')
           rvlist.append(' '*indent + "STOP_TIMER(open_timer);")
+    ##################################
     elif event['function'] == 'lseek':
         if not event['pathname'] in filter:
           rvlist.append (' '*indent + 'rv = lseek({}, {}, {});'.format(common.to_fp_name(event['pathname'], prefix='fd'), event['offset'], event['whence']))
+    #################################
     elif event['function'] == 'read':
         if not event['pathname'] in filter:
           rvlist.append(' '*indent + "START_TIMER(read_timer);")
           rvlist.append (' '*indent + 'rv = read({}, read_buf, {});'.format(common.to_fp_name(event['pathname'], prefix='fd'), event['return']))
           rvlist.append(' '*indent + "STOP_TIMER(read_timer);")
+    ##################################
     elif event['function'] == 'write':
         if not event['pathname'] in filter:
           rvlist.append(' '*indent + "START_TIMER(write_timer);")
           rvlist.append (' '*indent + 'rv = write({}, write_buf, {});'.format(common.to_fp_name(event['pathname'], prefix='fd'), event['return']))
           rvlist.append(' '*indent + "STOP_TIMER(write_timer);")
+    ###################################
     elif event['function'] == 'writev': # Replace writev with write for now
         if not event['pathname'] in filter:
           rvlist.append(' '*indent + "START_TIMER(write_timer);")
           rvlist.append (' '*indent + 'rv = write({}, write_buf, {});'.format(common.to_fp_name(event['pathname'], prefix='fd'), event['return']))
           rvlist.append(' '*indent + "STOP_TIMER(write_timer);")
+    ##################################
     elif event['function'] == 'close':
         if not event['pathname'] in filter:
           rvlist.append(' '*indent + "START_TIMER(close_timer);")
           rvlist.append (' '*indent + 'close ({});'.format(common.to_fp_name(event['pathname'], prefix='fd') ) )
           rvlist.append(' '*indent + "STOP_TIMER(close_timer);")
+    ####
     else:
         raise NotImplementedError('POSIX function not implemented -{}-'.format(event['function']))
 
@@ -271,6 +301,8 @@ timer_list = [
 'write',
 'close'
 ]
+
+declared_set = set()
 %>
 
 #define INIT_TIMERS() \
@@ -320,6 +352,7 @@ void do_rank_<%='{0:05d}'.format(int(self.arg['rank']))%> (MPI_Comm comm){
 <%
 filter = self.models['tweak']['filter']
 %>
+
 
 #for $event in $self.models['posix-model']['events'][int($self.arg['rank'])]
 <%=emit_function(event, filter=filter)%>
