@@ -1,0 +1,5 @@
+{
+	"config-file": "../model/mpi-test-config.json",
+	"io-model": "../model/mpi-test-posix-only.json",
+	"name": "mpi-test"
+}

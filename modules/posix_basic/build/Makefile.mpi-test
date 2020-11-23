@@ -1,0 +1,37 @@
+mpi-test:
+	mkdir -p ../repos/mpi-test
+	../bin/trace2model.py ../traces/mpi-test ../model/mpi-test.json
+	../bin/filter addcompute ../model/mpi-test.json --outfile ../model/mpi-test-compute.json
+	PYTHONPATH=${PWD}/../tmpl:${PYTHONPATH} skel template ../tmpl/CMakeLists_txt.tmpl --model ../model/mpi-test-compute.json:posix-model,../model/tweak.json:tweak --outfile ../repos/mpi-test/CMakeLists.txt
+	PYTHONPATH=${PWD}/../tmpl:${PYTHONPATH} skel template ../tmpl/main_src_cxx.tmpl --model ../model/mpi-test-compute.json:posix-model,../model/tweak.json:tweak --outfile ../repos/mpi-test/skel_grey_scott_posix_compute.cxx
+	PYTHONPATH=${PWD}/../tmpl:${PYTHONPATH} skel template ../tmpl/create_synthetic_data_cxx.tmpl --model ../model/mpi-test-compute.json:posix-model,../model/tweak.json:tweak --outfile ../repos/mpi-test/create_synthetic_data.cxx
+	PYTHONPATH=${PWD}/../tmpl:${PYTHONPATH} skel template ../tmpl/rank_src_cxx.tmpl --arg rank:0 --model ../model/mpi-test-compute.json:posix-model,../model/tweak.json:tweak --outfile ../repos/mpi-test/rank00000.cxx
+	PYTHONPATH=${PWD}/../tmpl:${PYTHONPATH} skel template ../tmpl/rank_src_cxx.tmpl --arg rank:1 --model ../model/mpi-test-compute.json:posix-model,../model/tweak.json:tweak --outfile ../repos/mpi-test/rank00001.cxx
+	PYTHONPATH=${PWD}/../tmpl:${PYTHONPATH} skel template ../tmpl/rank_src_cxx.tmpl --arg rank:2 --model ../model/mpi-test-compute.json:posix-model,../model/tweak.json:tweak --outfile ../repos/mpi-test/rank00002.cxx
+	PYTHONPATH=${PWD}/../tmpl:${PYTHONPATH} skel template ../tmpl/rank_src_cxx.tmpl --arg rank:3 --model ../model/mpi-test-compute.json:posix-model,../model/tweak.json:tweak --outfile ../repos/mpi-test/rank00003.cxx
+	mkdir -p ../repos/mpi-test/build
+	cd ../repos/mpi-test/build && cmake .. && make && cd -
+
+
+refresh:
+	skel template ../tmpl/Makefile.tmpl --model --/model/mpi-test-config.json:config,../model/mpi-test-compute.json:posix-model,../model/tweak.json:tweak --outfile Makefile.mpi-test
+
+
+
+create_synthetic:
+	cd ../repos/grey-scott/build && ./create_synthetic_data && cd -
+
+run:
+	cd ../repos/grey-scott/build && mpirun -np 36 -oversubscribe ./skel_grey_scott_posix_compute && cd -
+	cd ../repos/grey-scott/build && ~/sw/skel-io/bin/skel-io-merge && cd -
+
+run-tau:
+	cd ../repos/grey-scott/build && mpirun -np 36 -oversubscribe tau_exec -T mpi,pthread -io -skel ./skel_grey_scott_posix_compute && cd -
+
+plot:
+	cd ../repos/grey-scott/build && ~/sw/skel-io/bin/skel-io-plot && cd -
+	
+
+.PHONY: refresh create_synthetic run run-tau plot
+
+

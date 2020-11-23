@@ -1,0 +1,6 @@
+{
+	"config-file": "../model/grey-scott-config.json",
+	"io-model-base": "../model/grey-scott",
+	"trace-dir": "../traces/grey-scott",
+	"name": "grey-scott"
+}
