@@ -1,7 +1,7 @@
 
 $self.models['config']['name']:
 	mkdir -p ../repos/${self.models['config']['name']}
-	../bin/trace2model.py $self.models['config']['trace-dir'] ${self.models['config']['io-model-base']}.json
+	../bin/trace-json2model.py $self.models['config']['trace-dir'] ${self.models['config']['io-model-base']}.json
 	##../bin/filter posixonly ${self.models['config']['io-model-base']}.json --outfile ${self.models['config']['io-model-base']}-posix-only.json
 	../bin/filter addcompute ${self.models['config']['io-model-base']}.json --outfile ${self.models['config']['io-model-base']}-compute.json
 	PYTHONPATH=\${PWD}/../tmpl:\${PYTHONPATH} skel template ../tmpl/CMakeLists_txt.tmpl --model ${self.models['config']['config-file']}:config,${self.models['config']['io-model-base']}-compute.json:posix-model,../model/tweak.json:tweak --outfile ../repos/${self.models['config']['name']}/CMakeLists.txt

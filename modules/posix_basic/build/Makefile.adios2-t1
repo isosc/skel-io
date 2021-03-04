@@ -1,0 +1,36 @@
+
+adios2-t1:
+	mkdir -p ../repos/adios2-t1
+	../bin/trace-json2model.py ../traces/adios2-t1 ../model/adios2-t1.json
+	../bin/filter addcompute ../model/adios2-t1.json --outfile ../model/adios2-t1-compute.json
+	PYTHONPATH=${PWD}/../tmpl:${PYTHONPATH} skel template ../tmpl/CMakeLists_txt.tmpl --model ../model/adios2-t1-config.json:config,../model/adios2-t1-compute.json:posix-model,../model/tweak.json:tweak --outfile ../repos/adios2-t1/CMakeLists.txt
+	PYTHONPATH=${PWD}/../tmpl:${PYTHONPATH} skel template ../tmpl/main_src_cxx.tmpl --model ../model/adios2-t1-compute.json:posix-model,../model/tweak.json:tweak --outfile ../repos/adios2-t1/skel_adios2-t1.cxx
+	PYTHONPATH=${PWD}/../tmpl:${PYTHONPATH} skel template ../tmpl/create_synthetic_data_cxx.tmpl --model ../model/adios2-t1-compute.json:posix-model,../model/tweak.json:tweak --outfile ../repos/adios2-t1/create_synthetic_data.cxx
+	PYTHONPATH=${PWD}/../tmpl:${PYTHONPATH} skel template ../tmpl/rank_src_cxx.tmpl --arg rank:0 --model ../model/adios2-t1-compute.json:posix-model,../model/tweak.json:tweak --outfile ../repos/adios2-t1/rank00000.cxx
+	mkdir -p ../repos/adios2-t1/build
+	cd ../repos/adios2-t1/build && cmake .. && make && cd -
+
+
+
+refresh:
+	skel template ../tmpl/Makefile.tmpl --model ../model/adios2-t1-config.json:config,../model/adios2-t1.json:posix-model,../model/tweak.json:tweak --outfile Makefile.adios2-t1
+
+
+
+create_synthetic:
+	cd ../repos/adios2-t1/build && ./create_synthetic_data && cd -
+
+run:
+	cd ../repos/adios2-t1/build && mpirun -np 1 -oversubscribe ./skel_grey_scott_posix_compute && cd -
+	cd ../repos/grey-scott/build && ~/sw/skel-io/bin/skel-io-merge && cd -
+
+run-tau:
+	cd ../repos/grey-scott/build && mpirun -np 36 -oversubscribe tau_exec -T mpi,pthread -io -skel ./skel_grey_scott_posix_compute && cd -
+
+plot:
+	cd ../repos/grey-scott/build && ~/sw/skel-io/bin/skel-io-plot && cd -
+	
+
+.PHONY: refresh create_synthetic run run-tau plot
+
+

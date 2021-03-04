@@ -7,145 +7,159 @@ def stringify_list(lst):
 def emit_mpi_comm(event, field='comm'):
     if event[field] == "MPI_COMM_WORLD" or event[field] == "MPI_COMM_SELF" or event[field] == "MPI_COMM_NULL":
         return event[field]
+    if event[field] == "COMM_MPI_COMM_WORLD":
+        return "MPI_COMM_WORLD"
     return "COMM_{}".format(event[field])
+
+def emit_adios2_function(event, indent=4):
+    rvlist = []
+    rvlist.append(' '*indent + "// emitting adios2 function: {}".format(event['function']))
+
+    if event['function'] == '':
+        pass
+    else:
+        raise NotImplementedError('ADIOS2 fuction not implemented -{}-'.format(event['function']))
 
 def emit_mpi_function(event, indent=4):
     rvlist = []
     rvlist.append(' '*indent + "// emitting mpi function: {}".format(event['function']))
 
     if event['function'] == 'MPI_Allgather':
-        rvlist.append (''*indent + '{')
-        rvlist.append (''*indent + 'MPI_Datatype sendtype = MPI_BYTE;')
-        rvlist.append (''*indent + 'int sendcount = {};'.format (event['sendsize']))
-        rvlist.append (''*indent + 'MPI_Datatype recvtype = MPI_BYTE;')
-        rvlist.append (''*indent + 'int recvcount = {};'.format (event['recvsize']))
-        rvlist.append (''*indent + 'MPI_Comm comm = ' + emit_mpi_comm(event) +';')
-        rvlist.append (''*indent + 'MPI_Allgather(sendbuf, sendcount, sendtype, recvbuf, recvcount, recvtype, comm);')
-        rvlist.append (''*indent + '}')
+        rvlist.append (' '*indent + '{')
+        rvlist.append (' '*indent + 'MPI_Datatype sendtype = MPI_BYTE;')
+        rvlist.append (' '*indent + 'int sendcount = {};'.format (event['sendsize']))
+        rvlist.append (' '*indent + 'MPI_Datatype recvtype = MPI_BYTE;')
+        rvlist.append (' '*indent + 'int recvcount = {};'.format (event['recvsize']))
+        rvlist.append (' '*indent + 'MPI_Comm comm = ' + emit_mpi_comm(event) +';')
+        rvlist.append (' '*indent + 'MPI_Allgather(sendbuf, sendcount, sendtype, recvbuf, recvcount, recvtype, comm);')
+        rvlist.append (' '*indent + '}')
     elif event['function'] == 'MPI_Allgatherv':
-        rvlist.append (''*indent + '{')
-        rvlist.append (''*indent + 'MPI_Datatype sendtype = MPI_BYTE;')
-        rvlist.append (''*indent + 'int sendcount = {};'.format (event['mean']))
-        rvlist.append (''*indent + 'MPI_Datatype recvtype = MPI_BYTE;')
-        rvlist.append (''*indent + 'int recvcount = {};'.format (event['mean']))
-        rvlist.append (''*indent + 'MPI_Comm comm = ' + emit_mpi_comm(event) +';')
-        rvlist.append (''*indent + 'MPI_Allgather(sendbuf, sendcount, sendtype, recvbuf, recvcount, recvtype, comm);')
-        rvlist.append (''*indent + '}')
+        rvlist.append (' '*indent + '{')
+        rvlist.append (' '*indent + 'MPI_Datatype sendtype = MPI_BYTE;')
+        rvlist.append (' '*indent + 'int sendcount = {};'.format (event['mean']))
+        rvlist.append (' '*indent + 'MPI_Datatype recvtype = MPI_BYTE;')
+        rvlist.append (' '*indent + 'int recvcount = {};'.format (event['mean']))
+        rvlist.append (' '*indent + 'MPI_Comm comm = ' + emit_mpi_comm(event) +';')
+        rvlist.append (' '*indent + 'MPI_Allgather(sendbuf, sendcount, sendtype, recvbuf, recvcount, recvtype, comm);')
+        rvlist.append (' '*indent + '}')
     elif event['function'] == 'MPI_Allreduce':
-        rvlist.append (''*indent + '{')
-        rvlist.append (''*indent + 'int count = {};'.format (event['size']))
-        rvlist.append (''*indent + 'MPI_Comm comm = ' + emit_mpi_comm(event) +';')
-        rvlist.append (''*indent + 'MPI_Datatype datatype = MPI_BYTE;')
-        rvlist.append (''*indent + 'MPI_Op op = MPI_SUM;')
-        rvlist.append (''*indent + 'MPI_Allreduce(sendbuf, recvbuf, count, datatype, op, comm);')
-        rvlist.append (''*indent + '}')
+        rvlist.append (' '*indent + '{')
+        rvlist.append (' '*indent + 'int count = {};'.format (event['size']))
+        rvlist.append (' '*indent + 'MPI_Comm comm = ' + emit_mpi_comm(event) +';')
+        rvlist.append (' '*indent + 'MPI_Datatype datatype = MPI_BYTE;')
+        rvlist.append (' '*indent + 'MPI_Op op = MPI_SUM;')
+        rvlist.append (' '*indent + 'MPI_Allreduce(sendbuf, recvbuf, count, datatype, op, comm);')
+        rvlist.append (' '*indent + '}')
     elif event['function'] == 'MPI_Alltoall':
-        rvlist.append (''*indent + '{')
-        rvlist.append (''*indent + 'int sendcount = {};'.format (event['sendsize']))
-        rvlist.append (''*indent + 'int recvcount = {};'.format (event['recvsize']))
-        rvlist.append (''*indent + 'MPI_Comm comm = ' + emit_mpi_comm(event) +';')
-        rvlist.append (''*indent + 'MPI_Datatype sendtype = MPI_BYTE;')
-        rvlist.append (''*indent + 'MPI_Datatype recvtype = MPI_BYTE;')
-        rvlist.append (''*indent + 'MPI_Alltoall(sendbuf, sendcount, sendtype, recvbuf, recvcount, recvtype, comm);')
-        rvlist.append (''*indent + '}')
+        rvlist.append (' '*indent + '{')
+        rvlist.append (' '*indent + 'int sendcount = {};'.format (event['sendsize']))
+        rvlist.append (' '*indent + 'int recvcount = {};'.format (event['recvsize']))
+        rvlist.append (' '*indent + 'MPI_Comm comm = ' + emit_mpi_comm(event) +';')
+        rvlist.append (' '*indent + 'MPI_Datatype sendtype = MPI_BYTE;')
+        rvlist.append (' '*indent + 'MPI_Datatype recvtype = MPI_BYTE;')
+        rvlist.append (' '*indent + 'MPI_Alltoall(sendbuf, sendcount, sendtype, recvbuf, recvcount, recvtype, comm);')
+        rvlist.append (' '*indent + '}')
     elif event['function'] == 'MPI_Alltoallv':
-        rvlist.append (''*indent + '{')
-        rvlist.append (''*indent + 'int sendcount = {};'.format (event['sendmean']))
-        rvlist.append (''*indent + 'int recvcount = {};'.format (event['recvmean']))
-        rvlist.append (''*indent + 'MPI_Comm comm = ' + emit_mpi_comm(event) +';')
-        rvlist.append (''*indent + 'MPI_Datatype sendtype = MPI_BYTE;')
-        rvlist.append (''*indent + 'MPI_Datatype recvtype = MPI_BYTE;')
-        rvlist.append (''*indent + 'MPI_Alltoall(sendbuf, sendcount, sendtype, recvbuf, recvcount, recvtype, comm);')
-        rvlist.append (''*indent + '}')
+        rvlist.append (' '*indent + '{')
+        rvlist.append (' '*indent + 'int sendcount = {};'.format (event['sendmean']))
+        rvlist.append (' '*indent + 'int recvcount = {};'.format (event['recvmean']))
+        rvlist.append (' '*indent + 'MPI_Comm comm = ' + emit_mpi_comm(event) +';')
+        rvlist.append (' '*indent + 'MPI_Datatype sendtype = MPI_BYTE;')
+        rvlist.append (' '*indent + 'MPI_Datatype recvtype = MPI_BYTE;')
+        rvlist.append (' '*indent + 'MPI_Alltoall(sendbuf, sendcount, sendtype, recvbuf, recvcount, recvtype, comm);')
+        rvlist.append (' '*indent + '}')
     elif event['function'] == 'MPI_Barrier':
-        rvlist.append (''*indent + '{')
-        rvlist.append (''*indent + 'MPI_Comm comm = ' + emit_mpi_comm(event) +';')
-        rvlist.append (''*indent + 'MPI_Barrier(comm);')
-        rvlist.append (''*indent + '}')
+        rvlist.append (' '*indent + '{')
+        rvlist.append (' '*indent + 'MPI_Comm comm = ' + emit_mpi_comm(event) +';')
+        rvlist.append (' '*indent + 'MPI_Barrier(comm);')
+        rvlist.append (' '*indent + '}')
     elif event['function'] == 'MPI_Bcast':
-        rvlist.append (''*indent + '{')
-        rvlist.append (''*indent + 'int count = {};'.format (event['size']))
-        rvlist.append (''*indent + 'MPI_Datatype datatype = MPI_BYTE;')
-        rvlist.append (''*indent + 'MPI_Comm comm = ' + emit_mpi_comm(event) +';')
-        rvlist.append (''*indent + 'MPI_Bcast(sendbuf, count, datatype, root, comm);')
-        rvlist.append (''*indent + '}')
+        rvlist.append (' '*indent + '{')
+        rvlist.append (' '*indent + 'int count = {};'.format (event['size']))
+        rvlist.append (' '*indent + 'MPI_Datatype datatype = MPI_BYTE;')
+        rvlist.append (' '*indent + 'MPI_Comm comm = ' + emit_mpi_comm(event) +';')
+        rvlist.append (' '*indent + 'MPI_Bcast(sendbuf, count, datatype, root, comm);')
+        rvlist.append (' '*indent + '}')
     elif event['function'] == 'MPI_Cart_create':
-        rvlist.append (''*indent + '{')
-        rvlist.append (''*indent + 'int ndims = {};'.format (event['ndims']))
-        rvlist.append (''*indent + 'int dims[] = {{{}}};'.format (','.join(stringify_list(event['dims']))))
-        rvlist.append (''*indent + 'int periods[] = {{{}}};'.format (','.join(stringify_list(event['periods']))))
-        rvlist.append (''*indent + 'int reorder = {};'.format (event['reorder']))
-        rvlist.append (''*indent + 'MPI_Comm comm_new = ' + emit_mpi_comm(event, field='comm_out') +';')
-        rvlist.append (''*indent + 'MPI_Comm comm_old = ' + emit_mpi_comm(event) +';')
-        rvlist.append (''*indent + 'MPI_Cart_create(comm_old, ndims, dims, periods, reorder, &comm_new);')
-        rvlist.append (''*indent + '}')
+        rvlist.append (' '*indent + '{')
+        rvlist.append (' '*indent + 'int ndims = {};'.format (event['ndims']))
+        rvlist.append (' '*indent + 'int dims[] = {{{}}};'.format (','.join(stringify_list(event['dims']))))
+        rvlist.append (' '*indent + 'int periods[] = {{{}}};'.format (','.join(stringify_list(event['periods']))))
+        rvlist.append (' '*indent + 'int reorder = {};'.format (event['reorder']))
+        rvlist.append (' '*indent + 'MPI_Comm comm_new = ' + emit_mpi_comm(event, field='comm_out') +';')
+        rvlist.append (' '*indent + 'MPI_Comm comm_old = ' + emit_mpi_comm(event) +';')
+        rvlist.append (' '*indent + 'MPI_Cart_create(comm_old, ndims, dims, periods, reorder, &comm_new);')
+        rvlist.append (' '*indent + '}')
     elif event['function'] == 'MPI_Comm_split':
-        rvlist.append (''*indent + 'color = {};'.format(event['color']))
-        rvlist.append (''*indent + 'key = {};'.format(event['key']))
-        rvlist.append (''*indent + 'MPI_Comm_split(COMM_{}, color, key, COMM_{});'.format(event['comm_in'], event['comm_out']))
+       # rvlist.append (' '*indent + 'MPI_Comm {};'.format(emit_mpi_comm(event, field='comm_out') ) )
+        rvlist.append (' '*indent + 'color = {};'.format(event['color']))
+        rvlist.append (' '*indent + 'key = {};'.format(event['key']))
+        rvlist.append (' '*indent + 'MPI_Comm_split({}, color, key, &{});'.format(emit_mpi_comm(event, field='comm_in'), emit_mpi_comm(event, field='comm_out')))
     elif event['function'] == 'MPI_Comm_dup':
-        rvlist.append (''*indent + 'MPI_Comm COMM_{};'.format(event['comm_out']))
-        rvlist.append (''*indent + 'MPI_Comm_dup(COMM_{}, &COMM_{});'.format(event['comm_in'], event['comm_out']))
+       # rvlist.append (' '*indent + 'MPI_Comm COMM_{};'.format(event['comm_out']))
+        rvlist.append (' '*indent + 'MPI_Comm_dup(COMM_{}, &COMM_{});'.format(event['comm_in'], event['comm_out']))
     elif event['function'] == 'MPI_Gather':
-        rvlist.append (''*indent + '{')
-        rvlist.append (''*indent + 'MPI_Datatype sendtype = MPI_BYTE;')
-        rvlist.append (''*indent + 'int sendcount = {};'.format (event['sendsize']))
-        rvlist.append (''*indent + 'MPI_Datatype recvtype = MPI_BYTE;')
-        rvlist.append (''*indent + 'int recvcount = {};'.format (event['recvsize']))
-        rvlist.append (''*indent + 'MPI_Comm comm = ' + emit_mpi_comm(event) +';')
-        rvlist.append (''*indent + 'MPI_Gather(sendbuf, sendcount, sendtype, recvbuf, recvcount, recvtype, root, comm);')
-        rvlist.append (''*indent + '}')
+        rvlist.append (' '*indent + '{')
+        rvlist.append (' '*indent + 'MPI_Datatype sendtype = MPI_BYTE;')
+        rvlist.append (' '*indent + 'int sendcount = {};'.format (event['sendsize']))
+        rvlist.append (' '*indent + 'MPI_Datatype recvtype = MPI_BYTE;')
+        rvlist.append (' '*indent + 'int recvcount = {};'.format (event['recvsize']))
+        rvlist.append (' '*indent + 'MPI_Comm comm = ' + emit_mpi_comm(event) +';')
+        rvlist.append (' '*indent + 'MPI_Gather(sendbuf, sendcount, sendtype, recvbuf, recvcount, recvtype, root, comm);')
+        rvlist.append (' '*indent + '}')
     elif event['function'] == 'MPI_Gatherv':
-        rvlist.append (''*indent + '{')
-        rvlist.append (''*indent + 'MPI_Datatype sendtype = MPI_BYTE;')
-        rvlist.append (''*indent + 'int sendcount = {};'.format (event['mean']))
-        rvlist.append (''*indent + 'MPI_Datatype recvtype = MPI_BYTE;')
-        rvlist.append (''*indent + 'int recvcount = {};'.format (event['mean']))
-        rvlist.append (''*indent + 'MPI_Comm comm = ' + emit_mpi_comm(event) +';')
-        rvlist.append (''*indent + 'MPI_Gather(sendbuf, sendcount, sendtype, recvbuf, recvcount, recvtype, root, comm);')
-        rvlist.append (''*indent + '}')
+        rvlist.append (' '*indent + '{')
+        rvlist.append (' '*indent + 'MPI_Datatype sendtype = MPI_BYTE;')
+        rvlist.append (' '*indent + 'int sendcount = {};'.format (event['mean']))
+        rvlist.append (' '*indent + 'MPI_Datatype recvtype = MPI_BYTE;')
+        rvlist.append (' '*indent + 'int recvcount = {};'.format (event['mean']))
+        rvlist.append (' '*indent + 'MPI_Comm comm = ' + emit_mpi_comm(event) +';')
+        rvlist.append (' '*indent + 'MPI_Gather(sendbuf, sendcount, sendtype, recvbuf, recvcount, recvtype, root, comm);')
+        rvlist.append (' '*indent + '}')
     elif event['function'] == 'MPI_Reduce':
-        rvlist.append (''*indent + '{')
-        rvlist.append (''*indent + 'int count = {};'.format (event['size']))
-        rvlist.append (''*indent + 'MPI_Comm comm = ' + emit_mpi_comm(event) +';')
-        rvlist.append (''*indent + 'MPI_Datatype datatype = MPI_BYTE;')
-        rvlist.append (''*indent + 'MPI_Op op = MPI_SUM;')
-        rvlist.append (''*indent + 'MPI_Reduce(sendbuf, recvbuf, count, datatype, op, root, comm);')
-        rvlist.append (''*indent + '}')
+        rvlist.append (' '*indent + '{')
+        rvlist.append (' '*indent + 'int count = {};'.format (event['size']))
+        rvlist.append (' '*indent + 'MPI_Comm comm = ' + emit_mpi_comm(event) +';')
+        rvlist.append (' '*indent + 'MPI_Datatype datatype = MPI_BYTE;')
+        rvlist.append (' '*indent + 'MPI_Op op = MPI_SUM;')
+        rvlist.append (' '*indent + 'MPI_Reduce(sendbuf, recvbuf, count, datatype, op, root, comm);')
+        rvlist.append (' '*indent + '}')
     elif event['function'] == 'MPI_Reduce_scatter':
-        rvlist.append (''*indent + '{')
-        #rvlist.append (''*indent + 'int count = {};'.format (event['size']))
-        #rvlist.append (''*indent + 'MPI_Comm comm = ' + emit_mpi_comm(event) +';')
-        #rvlist.append (''*indent + 'MPI_Datatype datatype = MPI_BYTE;')
-        #rvlist.append (''*indent + 'MPI_Op op = MPI_SUM;')
-        #rvlist.append (''*indent + 'MPI_Reduce_scatter(sendbuf, recvbuf, recvcounts, datatype, op, comm);')
-        rvlist.append (''*indent + '}')
+        rvlist.append (' '*indent + '{')
+        #rvlist.append (' '*indent + 'int count = {};'.format (event['size']))
+        #rvlist.append (' '*indent + 'MPI_Comm comm = ' + emit_mpi_comm(event) +';')
+        #rvlist.append (' '*indent + 'MPI_Datatype datatype = MPI_BYTE;')
+        #rvlist.append (' '*indent + 'MPI_Op op = MPI_SUM;')
+        #rvlist.append (' '*indent + 'MPI_Reduce_scatter(sendbuf, recvbuf, recvcounts, datatype, op, comm);')
+        rvlist.append (' '*indent + '}')
     elif event['function'] == 'MPI_Scan':
-        rvlist.append (''*indent + '{')
-        rvlist.append (''*indent + 'int count = {};'.format (event['size']))
-        rvlist.append (''*indent + 'MPI_Comm comm = ' + emit_mpi_comm(event) +';')
-        rvlist.append (''*indent + 'MPI_Datatype datatype = MPI_BYTE;')
-        rvlist.append (''*indent + 'MPI_Op op = MPI_SUM;')
-        rvlist.append (''*indent + 'MPI_Scan(sendbuf, recvbuf, count, datatype, op, comm);')
-        rvlist.append (''*indent + '}')
+        rvlist.append (' '*indent + '{')
+        rvlist.append (' '*indent + 'int count = {};'.format (event['size']))
+        rvlist.append (' '*indent + 'MPI_Comm comm = ' + emit_mpi_comm(event) +';')
+        rvlist.append (' '*indent + 'MPI_Datatype datatype = MPI_BYTE;')
+        rvlist.append (' '*indent + 'MPI_Op op = MPI_SUM;')
+        rvlist.append (' '*indent + 'MPI_Scan(sendbuf, recvbuf, count, datatype, op, comm);')
+        rvlist.append (' '*indent + '}')
     elif event['function'] == 'MPI_Scatter':
-        rvlist.append (''*indent + '{')
-        rvlist.append (''*indent + 'MPI_Datatype sendtype = MPI_BYTE;')
-        rvlist.append (''*indent + 'int sendcount = {};'.format (event['sendsize']))
-        rvlist.append (''*indent + 'MPI_Datatype recvtype = MPI_BYTE;')
-        rvlist.append (''*indent + 'int recvcount = {};'.format (event['recvsize']))
-        rvlist.append (''*indent + 'MPI_Comm comm = ' + emit_mpi_comm(event) +';')
-        rvlist.append (''*indent + 'MPI_Scatter(sendbuf, sendcount, sendtype, recvbuf, recvcount, recvtype, root, comm);')
-        rvlist.append (''*indent + '}')
+        rvlist.append (' '*indent + '{')
+        rvlist.append (' '*indent + 'MPI_Datatype sendtype = MPI_BYTE;')
+        rvlist.append (' '*indent + 'int sendcount = {};'.format (event['sendsize']))
+        rvlist.append (' '*indent + 'MPI_Datatype recvtype = MPI_BYTE;')
+        rvlist.append (' '*indent + 'int recvcount = {};'.format (event['recvsize']))
+        rvlist.append (' '*indent + 'MPI_Comm comm = ' + emit_mpi_comm(event) +';')
+        rvlist.append (' '*indent + 'MPI_Scatter(sendbuf, sendcount, sendtype, recvbuf, recvcount, recvtype, root, comm);')
+        rvlist.append (' '*indent + '}')
     elif event['function'] == 'MPI_Scatterv':
-        rvlist.append (''*indent + '{')
-        rvlist.append (''*indent + 'MPI_Datatype sendtype = MPI_BYTE;')
-        rvlist.append (''*indent + 'int sendcount = {};'.format (event['mean']))
-        rvlist.append (''*indent + 'MPI_Datatype recvtype = MPI_BYTE;')
-        rvlist.append (''*indent + 'int recvcount = {};'.format (event['mean']))
-        rvlist.append (''*indent + 'MPI_Comm comm = ' + emit_mpi_comm(event) +';')
-        rvlist.append (''*indent + 'MPI_Scatter(sendbuf, sendcount, sendtype, recvbuf, recvcount, recvtype, root, comm);')
-        rvlist.append (''*indent + '}')
+        rvlist.append (' '*indent + '{')
+        rvlist.append (' '*indent + 'MPI_Datatype sendtype = MPI_BYTE;')
+        rvlist.append (' '*indent + 'int sendcount = {};'.format (event['mean']))
+        rvlist.append (' '*indent + 'MPI_Datatype recvtype = MPI_BYTE;')
+        rvlist.append (' '*indent + 'int recvcount = {};'.format (event['mean']))
+        rvlist.append (' '*indent + 'MPI_Comm comm = ' + emit_mpi_comm(event) +';')
+        rvlist.append (' '*indent + 'MPI_Scatter(sendbuf, sendcount, sendtype, recvbuf, recvcount, recvtype, root, comm);')
+        rvlist.append (' '*indent + '}')
+    elif event['function'] == 'MPI_Comm_free':
+        rvlist.append (' '*indent + '// MPI_Comm_free')
     else:
         raise NotImplementedError('MPI fuction not implemented -{}-'.format(event['function']))
 
@@ -271,6 +285,8 @@ def emit_function(event, filter=[]):
         return emit_posix_function(event, filter=filter)
     elif event['type'] == 'SKEL':
         return emit_skel_function(event)
+    elif event['type'] == 'ADIOS2_API':
+        return emit_adios2_function(event)
     elif event['type'] == 'none':
         return "// none type event ignored"
     else:
@@ -303,6 +319,17 @@ timer_list = [
 ]
 
 declared_set = set()
+mpi_comm_set = set()
+
+# Let us grab all of the comm declarations
+for event in self.models['posix-model']['events'][int(self.arg['rank'])]:
+    if event.get('comm', None):
+        mpi_comm_set.add (event['comm'])
+    if event.get('comm_in', None):
+        mpi_comm_set.add (event['comm_in'])
+    if event.get('comm_out', None):
+        mpi_comm_set.add (event['comm_out'])
+
 %>
 
 #define INIT_TIMERS() \
@@ -335,6 +362,12 @@ void do_rank_<%='{0:05d}'.format(int(self.arg['rank']))%> (MPI_Comm comm){
     char* read_buf = (char*)(malloc (read_buf_size) );
     char* sendbuf = (char*)(malloc (send_buf_size) );
     char* recvbuf = (char*)(malloc (recv_buf_size) );
+
+#for $comm in $mpi_comm_set
+#if not 'MPI' in $comm
+    MPI_Comm COMM_$comm;
+#end if 
+#end for
 
     int size, rank;
     MPI_Comm_size (comm, &size);

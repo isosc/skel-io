@@ -1,0 +1,6 @@
+{
+	"config-file": "../model/adios2-t1-config.json",
+	"io-model-base": "../model/adios2-t1",
+	"trace-dir": "../traces/adios2-t1",
+	"name": "adios2-t1"
+}
