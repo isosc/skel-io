@@ -1,6 +1,8 @@
 <%
 import common
 
+has_adios = True
+
 def stringify_list(lst):
     return map (str, lst)
 
@@ -13,18 +15,42 @@ def emit_mpi_comm(event, field='comm'):
 
 def emit_adios2_function(event, indent=4):
     rvlist = []
-    rvlist.append(' '*indent + "// emitting adios2 function: {}".format(event['function']))
+    rvlist.append(' '*indent + "// emitting adios2 function: {}".format(event['name']))
 
-    if event['function'] == '':
+    if event['name'] == 'adios2::ADIOS::ADIOS':
+        rvlist.append(' '*indent + "adios2::ADIOS adios(" + emit_mpi_comm(event) + ");")
+    elif event['name'] == 'adios2::IO adios2::ADIOS::DeclareIO':
+        rvlist.append(' '*indent + 'adios2::IO io_' + event['return'] + ' = adios.DeclareIO("' + event['name'] + '");')
+    elif event['name'] == 'Attribute<double> adios2::IO::DefineAttribute<double>':
+        rvlist.append(' '*indent + 'adios2::Attribute<double> io_' + event['return'] + ' = io_' + event['this'] +'.DefineAttribute<double>("' + event['name'] + '", ' + event['value'] + ');')
+    elif event['name'] == 'Variable<double> adios2::IO::DefineVariable<double>':
+        rvlist.append(' '*indent + 'adios2::Variable<double> io_' + event['return'] + ' = io_' + event['this'] +'.DefineVariable<double>("' + event['_name'] + '");')
+    elif event['name'] == 'Variable<int> adios2::IO::DefineVariable<int>':
+        rvlist.append(' '*indent + 'adios2::Variable<int> io_' + event['return'] + ' = io_' + event['this'] +'.DefineVariable<int>("' + event['_name'] + '");')
+    elif event['name'] == 'adios2::Engine adios2::IO::Open':
+        rvlist.append(' '*indent + 'adios2::Engine engine_' + event['return'] + ' = io_' + event['this'] + '.Open("' + event['_name'] + '", ' + event['mode'] + ');')
+    elif event['name'] == 'std::string adios2::IO::EngineType':
+        rvlist.append(' '*indent + '// Ignoring EngineType call.')
+    elif event['name'] == 'adios2::StepStatus adios2::Engine::BeginStep':
+        rvlist.append(' '*indent + 'engine_' + event['this'] + '.BeginStep();')
+    elif event['name'] == 'void adios2::Engine::Put<int>':
+        pass
+    elif event['name'] == 'void adios2::Engine::Put<double>':
+        pass
+    elif event['name'] == 'void adios2::Engine::EndStep':
+        rvlist.append(' '*indent + 'engine_' + event['this'] + '.EndStep();')
+    elif event['name'] == 'void adios2::Engine::Close':
         pass
     else:
-        raise NotImplementedError('ADIOS2 fuction not implemented -{}-'.format(event['function']))
+        raise NotImplementedError('ADIOS2 fuction not implemented -{}-'.format(event['name']))
+
+    return '\n'.join (rvlist)
 
 def emit_mpi_function(event, indent=4):
     rvlist = []
-    rvlist.append(' '*indent + "// emitting mpi function: {}".format(event['function']))
+    rvlist.append(' '*indent + "// emitting mpi function: {}".format(event['name']))
 
-    if event['function'] == 'MPI_Allgather':
+    if event['name'] == 'MPI_Allgather':
         rvlist.append (' '*indent + '{')
         rvlist.append (' '*indent + 'MPI_Datatype sendtype = MPI_BYTE;')
         rvlist.append (' '*indent + 'int sendcount = {};'.format (event['sendsize']))
@@ -33,7 +59,7 @@ def emit_mpi_function(event, indent=4):
         rvlist.append (' '*indent + 'MPI_Comm comm = ' + emit_mpi_comm(event) +';')
         rvlist.append (' '*indent + 'MPI_Allgather(sendbuf, sendcount, sendtype, recvbuf, recvcount, recvtype, comm);')
         rvlist.append (' '*indent + '}')
-    elif event['function'] == 'MPI_Allgatherv':
+    elif event['name'] == 'MPI_Allgatherv':
         rvlist.append (' '*indent + '{')
         rvlist.append (' '*indent + 'MPI_Datatype sendtype = MPI_BYTE;')
         rvlist.append (' '*indent + 'int sendcount = {};'.format (event['mean']))
@@ -42,7 +68,7 @@ def emit_mpi_function(event, indent=4):
         rvlist.append (' '*indent + 'MPI_Comm comm = ' + emit_mpi_comm(event) +';')
         rvlist.append (' '*indent + 'MPI_Allgather(sendbuf, sendcount, sendtype, recvbuf, recvcount, recvtype, comm);')
         rvlist.append (' '*indent + '}')
-    elif event['function'] == 'MPI_Allreduce':
+    elif event['name'] == 'MPI_Allreduce':
         rvlist.append (' '*indent + '{')
         rvlist.append (' '*indent + 'int count = {};'.format (event['size']))
         rvlist.append (' '*indent + 'MPI_Comm comm = ' + emit_mpi_comm(event) +';')
@@ -50,7 +76,7 @@ def emit_mpi_function(event, indent=4):
         rvlist.append (' '*indent + 'MPI_Op op = MPI_SUM;')
         rvlist.append (' '*indent + 'MPI_Allreduce(sendbuf, recvbuf, count, datatype, op, comm);')
         rvlist.append (' '*indent + '}')
-    elif event['function'] == 'MPI_Alltoall':
+    elif event['name'] == 'MPI_Alltoall':
         rvlist.append (' '*indent + '{')
         rvlist.append (' '*indent + 'int sendcount = {};'.format (event['sendsize']))
         rvlist.append (' '*indent + 'int recvcount = {};'.format (event['recvsize']))
@@ -59,7 +85,7 @@ def emit_mpi_function(event, indent=4):
         rvlist.append (' '*indent + 'MPI_Datatype recvtype = MPI_BYTE;')
         rvlist.append (' '*indent + 'MPI_Alltoall(sendbuf, sendcount, sendtype, recvbuf, recvcount, recvtype, comm);')
         rvlist.append (' '*indent + '}')
-    elif event['function'] == 'MPI_Alltoallv':
+    elif event['name'] == 'MPI_Alltoallv':
         rvlist.append (' '*indent + '{')
         rvlist.append (' '*indent + 'int sendcount = {};'.format (event['sendmean']))
         rvlist.append (' '*indent + 'int recvcount = {};'.format (event['recvmean']))
@@ -68,19 +94,19 @@ def emit_mpi_function(event, indent=4):
         rvlist.append (' '*indent + 'MPI_Datatype recvtype = MPI_BYTE;')
         rvlist.append (' '*indent + 'MPI_Alltoall(sendbuf, sendcount, sendtype, recvbuf, recvcount, recvtype, comm);')
         rvlist.append (' '*indent + '}')
-    elif event['function'] == 'MPI_Barrier':
+    elif event['name'] == 'MPI_Barrier':
         rvlist.append (' '*indent + '{')
         rvlist.append (' '*indent + 'MPI_Comm comm = ' + emit_mpi_comm(event) +';')
         rvlist.append (' '*indent + 'MPI_Barrier(comm);')
         rvlist.append (' '*indent + '}')
-    elif event['function'] == 'MPI_Bcast':
+    elif event['name'] == 'MPI_Bcast':
         rvlist.append (' '*indent + '{')
         rvlist.append (' '*indent + 'int count = {};'.format (event['size']))
         rvlist.append (' '*indent + 'MPI_Datatype datatype = MPI_BYTE;')
         rvlist.append (' '*indent + 'MPI_Comm comm = ' + emit_mpi_comm(event) +';')
         rvlist.append (' '*indent + 'MPI_Bcast(sendbuf, count, datatype, root, comm);')
         rvlist.append (' '*indent + '}')
-    elif event['function'] == 'MPI_Cart_create':
+    elif event['name'] == 'MPI_Cart_create':
         rvlist.append (' '*indent + '{')
         rvlist.append (' '*indent + 'int ndims = {};'.format (event['ndims']))
         rvlist.append (' '*indent + 'int dims[] = {{{}}};'.format (','.join(stringify_list(event['dims']))))
@@ -90,15 +116,15 @@ def emit_mpi_function(event, indent=4):
         rvlist.append (' '*indent + 'MPI_Comm comm_old = ' + emit_mpi_comm(event) +';')
         rvlist.append (' '*indent + 'MPI_Cart_create(comm_old, ndims, dims, periods, reorder, &comm_new);')
         rvlist.append (' '*indent + '}')
-    elif event['function'] == 'MPI_Comm_split':
+    elif event['name'] == 'MPI_Comm_split':
        # rvlist.append (' '*indent + 'MPI_Comm {};'.format(emit_mpi_comm(event, field='comm_out') ) )
         rvlist.append (' '*indent + 'color = {};'.format(event['color']))
         rvlist.append (' '*indent + 'key = {};'.format(event['key']))
         rvlist.append (' '*indent + 'MPI_Comm_split({}, color, key, &{});'.format(emit_mpi_comm(event, field='comm_in'), emit_mpi_comm(event, field='comm_out')))
-    elif event['function'] == 'MPI_Comm_dup':
+    elif event['name'] == 'MPI_Comm_dup':
        # rvlist.append (' '*indent + 'MPI_Comm COMM_{};'.format(event['comm_out']))
         rvlist.append (' '*indent + 'MPI_Comm_dup(COMM_{}, &COMM_{});'.format(event['comm_in'], event['comm_out']))
-    elif event['function'] == 'MPI_Gather':
+    elif event['name'] == 'MPI_Gather':
         rvlist.append (' '*indent + '{')
         rvlist.append (' '*indent + 'MPI_Datatype sendtype = MPI_BYTE;')
         rvlist.append (' '*indent + 'int sendcount = {};'.format (event['sendsize']))
@@ -107,7 +133,7 @@ def emit_mpi_function(event, indent=4):
         rvlist.append (' '*indent + 'MPI_Comm comm = ' + emit_mpi_comm(event) +';')
         rvlist.append (' '*indent + 'MPI_Gather(sendbuf, sendcount, sendtype, recvbuf, recvcount, recvtype, root, comm);')
         rvlist.append (' '*indent + '}')
-    elif event['function'] == 'MPI_Gatherv':
+    elif event['name'] == 'MPI_Gatherv':
         rvlist.append (' '*indent + '{')
         rvlist.append (' '*indent + 'MPI_Datatype sendtype = MPI_BYTE;')
         rvlist.append (' '*indent + 'int sendcount = {};'.format (event['mean']))
@@ -116,7 +142,7 @@ def emit_mpi_function(event, indent=4):
         rvlist.append (' '*indent + 'MPI_Comm comm = ' + emit_mpi_comm(event) +';')
         rvlist.append (' '*indent + 'MPI_Gather(sendbuf, sendcount, sendtype, recvbuf, recvcount, recvtype, root, comm);')
         rvlist.append (' '*indent + '}')
-    elif event['function'] == 'MPI_Reduce':
+    elif event['name'] == 'MPI_Reduce':
         rvlist.append (' '*indent + '{')
         rvlist.append (' '*indent + 'int count = {};'.format (event['size']))
         rvlist.append (' '*indent + 'MPI_Comm comm = ' + emit_mpi_comm(event) +';')
@@ -124,7 +150,7 @@ def emit_mpi_function(event, indent=4):
         rvlist.append (' '*indent + 'MPI_Op op = MPI_SUM;')
         rvlist.append (' '*indent + 'MPI_Reduce(sendbuf, recvbuf, count, datatype, op, root, comm);')
         rvlist.append (' '*indent + '}')
-    elif event['function'] == 'MPI_Reduce_scatter':
+    elif event['name'] == 'MPI_Reduce_scatter':
         rvlist.append (' '*indent + '{')
         #rvlist.append (' '*indent + 'int count = {};'.format (event['size']))
         #rvlist.append (' '*indent + 'MPI_Comm comm = ' + emit_mpi_comm(event) +';')
@@ -132,7 +158,7 @@ def emit_mpi_function(event, indent=4):
         #rvlist.append (' '*indent + 'MPI_Op op = MPI_SUM;')
         #rvlist.append (' '*indent + 'MPI_Reduce_scatter(sendbuf, recvbuf, recvcounts, datatype, op, comm);')
         rvlist.append (' '*indent + '}')
-    elif event['function'] == 'MPI_Scan':
+    elif event['name'] == 'MPI_Scan':
         rvlist.append (' '*indent + '{')
         rvlist.append (' '*indent + 'int count = {};'.format (event['size']))
         rvlist.append (' '*indent + 'MPI_Comm comm = ' + emit_mpi_comm(event) +';')
@@ -140,7 +166,7 @@ def emit_mpi_function(event, indent=4):
         rvlist.append (' '*indent + 'MPI_Op op = MPI_SUM;')
         rvlist.append (' '*indent + 'MPI_Scan(sendbuf, recvbuf, count, datatype, op, comm);')
         rvlist.append (' '*indent + '}')
-    elif event['function'] == 'MPI_Scatter':
+    elif event['name'] == 'MPI_Scatter':
         rvlist.append (' '*indent + '{')
         rvlist.append (' '*indent + 'MPI_Datatype sendtype = MPI_BYTE;')
         rvlist.append (' '*indent + 'int sendcount = {};'.format (event['sendsize']))
@@ -149,7 +175,7 @@ def emit_mpi_function(event, indent=4):
         rvlist.append (' '*indent + 'MPI_Comm comm = ' + emit_mpi_comm(event) +';')
         rvlist.append (' '*indent + 'MPI_Scatter(sendbuf, sendcount, sendtype, recvbuf, recvcount, recvtype, root, comm);')
         rvlist.append (' '*indent + '}')
-    elif event['function'] == 'MPI_Scatterv':
+    elif event['name'] == 'MPI_Scatterv':
         rvlist.append (' '*indent + '{')
         rvlist.append (' '*indent + 'MPI_Datatype sendtype = MPI_BYTE;')
         rvlist.append (' '*indent + 'int sendcount = {};'.format (event['mean']))
@@ -158,20 +184,20 @@ def emit_mpi_function(event, indent=4):
         rvlist.append (' '*indent + 'MPI_Comm comm = ' + emit_mpi_comm(event) +';')
         rvlist.append (' '*indent + 'MPI_Scatter(sendbuf, sendcount, sendtype, recvbuf, recvcount, recvtype, root, comm);')
         rvlist.append (' '*indent + '}')
-    elif event['function'] == 'MPI_Comm_free':
+    elif event['name'] == 'MPI_Comm_free':
         rvlist.append (' '*indent + '// MPI_Comm_free')
     else:
-        raise NotImplementedError('MPI fuction not implemented -{}-'.format(event['function']))
+        raise NotImplementedError('MPI fuction not implemented -{}-'.format(event['name']))
 
     return '\n'.join (rvlist)
 
 def emit_posix_function(event, indent=4, filter=[]):
     rvlist = []
-    rvlist.append(' '*indent + "// emitting posix function: {0}".format(event['function']))
+    rvlist.append(' '*indent + "// emitting posix function: {0}".format(event['name']))
     rvlist.append(' '*indent + "START_TIMER(posix_total_timer);")
 
     ##################################
-    if event['function'] == 'fopen64':
+    if event['name'] == 'fopen64':
         if not event['path'] in filter:
           rvlist.append(' '*indent + "START_TIMER(open_timer);")
           file_name = common.to_fp_name(event['path'])
@@ -188,7 +214,7 @@ def emit_posix_function(event, indent=4, filter=[]):
           rvlist.append (' '*indent + 'int {} = fileno ({});'.format(common.to_fp_name(event['path'], prefix='fd'), common.to_fp_name(event['path']) ) )
           rvlist.append(' '*indent + "STOP_TIMER(open_timer);")
     ##################################
-    elif event['function'] == 'fopen':
+    elif event['name'] == 'fopen':
         if not event['path'] in filter:
           rvlist.append(' '*indent + "START_TIMER(open_timer);")
           file_name = common.to_fp_name(event['path'])
@@ -205,23 +231,23 @@ def emit_posix_function(event, indent=4, filter=[]):
           rvlist.append (' '*indent + 'int {} = fileno ({});'.format(common.to_fp_name(event['path'], prefix='fd'), common.to_fp_name(event['path']) ) )
           rvlist.append(' '*indent + "STOP_TIMER(open_timer);")
     ##################################
-    elif event['function'] == 'fread':
+    elif event['name'] == 'fread':
         if not event['pathname'] in filter:
           rvlist.append(' '*indent + "START_TIMER(read_timer);")
           rvlist.append (' '*indent + 'fread ({})'.format(common.to_fp_name(event['pathname']) ) )
           rvlist.append(' '*indent + "STOP_TIMER(read_timer);")
     ###################################
-    elif event['function'] == 'fwrite':
+    elif event['name'] == 'fwrite':
         if not event['pathname'] in filter:
           rvlist.append(' '*indent + "START_TIMER(write_timer);")
           rvlist.append (' '*indent + 'fwrite (write_buf, {}, 1, {});'.format(event['return'], common.to_fp_name(event['pathname']) ) )
           rvlist.append(' '*indent + "STOP_TIMER(write_timer);")
     ###################################
-    elif event['function'] == 'fclose':
+    elif event['name'] == 'fclose':
         if not event['pathname'] in filter:
           rvlist.append (' '*indent + '//fclose ({});'.format(common.to_fp_name(event['pathname']) ) )
     #################################
-    elif event['function'] == 'open':
+    elif event['name'] == 'open':
         if not event['pathname'] in filter:
           rvlist.append(' '*indent + "START_TIMER(open_timer);")
           decl = "int "
@@ -237,36 +263,36 @@ def emit_posix_function(event, indent=4, filter=[]):
           rvlist.append (' '*indent + '}')
           rvlist.append(' '*indent + "STOP_TIMER(open_timer);")
     ##################################
-    elif event['function'] == 'lseek':
+    elif event['name'] == 'lseek':
         if not event['pathname'] in filter:
           rvlist.append (' '*indent + 'rv = lseek({}, {}, {});'.format(common.to_fp_name(event['pathname'], prefix='fd'), event['offset'], event['whence']))
     #################################
-    elif event['function'] == 'read':
+    elif event['name'] == 'read':
         if not event['pathname'] in filter:
           rvlist.append(' '*indent + "START_TIMER(read_timer);")
           rvlist.append (' '*indent + 'rv = read({}, read_buf, {});'.format(common.to_fp_name(event['pathname'], prefix='fd'), event['return']))
           rvlist.append(' '*indent + "STOP_TIMER(read_timer);")
     ##################################
-    elif event['function'] == 'write':
+    elif event['name'] == 'write':
         if not event['pathname'] in filter:
           rvlist.append(' '*indent + "START_TIMER(write_timer);")
           rvlist.append (' '*indent + 'rv = write({}, write_buf, {});'.format(common.to_fp_name(event['pathname'], prefix='fd'), event['return']))
           rvlist.append(' '*indent + "STOP_TIMER(write_timer);")
     ###################################
-    elif event['function'] == 'writev': # Replace writev with write for now
+    elif event['name'] == 'writev': # Replace writev with write for now
         if not event['pathname'] in filter:
           rvlist.append(' '*indent + "START_TIMER(write_timer);")
           rvlist.append (' '*indent + 'rv = write({}, write_buf, {});'.format(common.to_fp_name(event['pathname'], prefix='fd'), event['return']))
           rvlist.append(' '*indent + "STOP_TIMER(write_timer);")
     ##################################
-    elif event['function'] == 'close':
+    elif event['name'] == 'close':
         if not event['pathname'] in filter:
           rvlist.append(' '*indent + "START_TIMER(close_timer);")
           rvlist.append (' '*indent + 'close ({});'.format(common.to_fp_name(event['pathname'], prefix='fd') ) )
           rvlist.append(' '*indent + "STOP_TIMER(close_timer);")
     ####
     else:
-        raise NotImplementedError('POSIX function not implemented -{}-'.format(event['function']))
+        raise NotImplementedError('POSIX function not implemented -{}-'.format(event['name']))
 
     rvlist.append(' '*indent + "STOP_TIMER(posix_total_timer);")
     return '\n'.join (rvlist)
@@ -274,23 +300,25 @@ def emit_posix_function(event, indent=4, filter=[]):
 
 def emit_skel_function(event, indent=4):
 
-    if event['function'] == 'compute':
-        return " "*indent + "std::this_thread::sleep_for(std::chrono::milliseconds({}) );".format(int(event['duration']/1000)) #convert micros to millis.
+    if event['name'] == 'compute':
+        return " "*indent + "std::this_thread::sleep_for(std::chrono::milliseconds({}) );".format(int(event['dur']/1000)) #convert micros to millis.
 
 
 def emit_function(event, filter=[]):
-    if event['type'] == 'MPI':
+    if event['cat'] == 'MPI':
         return emit_mpi_function(event)
-    elif event['type'] == 'POSIX':
+    elif event['cat'] == 'POSIX':
         return emit_posix_function(event, filter=filter)
-    elif event['type'] == 'SKEL':
+    elif event['cat'] == 'SKEL':
         return emit_skel_function(event)
-    elif event['type'] == 'ADIOS2_API':
+    elif event['cat'] == 'ADIOS2_API':
         return emit_adios2_function(event)
-    elif event['type'] == 'none':
+    elif event['cat'] == 'TAU':
+        return "// TAU event ignored"
+    elif event['cat'] == 'none':
         return "// none type event ignored"
     else:
-        raise NotImplementedError('Unknown function type -{}-'.format(event['type']))
+        raise NotImplementedError('Unknown function category -{}-'.format(event['cat']))
 
 %>
 
@@ -305,6 +333,9 @@ def emit_function(event, filter=[]):
 \#include <ctime>
 \#include <thread>
 \#include <limits>
+#if $has_adios
+\#include <adios2.h>
+#end if
 
 extern std::string logfilename;
 extern std::string tag;
@@ -389,6 +420,7 @@ filter = self.models['tweak']['filter']
 
 #for $event in $self.models['posix-model']['events'][int($self.arg['rank'])]
 <%=emit_function(event, filter=filter)%>
+
 #end for
 
     STOP_TIMER(total_timer);

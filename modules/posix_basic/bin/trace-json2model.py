@@ -37,7 +37,7 @@ for filename in trace_list:
         # and because the events are recorded after the event finishes
         # there's a chance that events are slightly out of order
         # Because the timestamp is when the event was started.
-        allevents.append (sorted(intrace, key=lambda k: k['timestamp']) )
+        allevents.append (sorted(intrace, key=lambda k: k['ts']) )
         print("Parsed", filename, "found", len(intrace), "events")
 
 posix_model['events'] = allevents

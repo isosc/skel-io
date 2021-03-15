@@ -7,7 +7,7 @@ project(skel_${self.models['config']['name']} LANGUAGES C CXX VERSION 1.0)
 set(CMAKE_BUILD_TYPE Release)
 
 find_package(MPI REQUIRED)
-#find_package(ADIOS2 REQUIRED)
+find_package(ADIOS2 REQUIRED)
 
 add_definitions(-DOMPI_SKIP_MPICXX)
 
@@ -19,5 +19,6 @@ add_executable(skel_${self.models['config']['name']} skel_${self.models['config'
 
 add_executable(create_synthetic_data create_synthetic_data.cxx)
 
-target_link_libraries(skel_${self.models['config']['name']} mpi)
+target_link_libraries(skel_${self.models['config']['name']} mpi adios2::cxx11_mpi) 
+#target_link_libraries(skel_${self.models['config']['name']} mpi adios2) 
 

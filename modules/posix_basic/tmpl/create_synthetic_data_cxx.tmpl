@@ -10,19 +10,19 @@ for proc in self.models['posix-model']['events']:
     proc_max_pos = {}
     proc_cur_pos = {}
     for event in proc:
-        if event['type'] == 'POSIX' and event['function'] == 'read':
+        if event['cat'] == 'POSIX' and event['name'] == 'read':
             if event['pathname'] in filter:
                 continue
             proc_file_names.add (event['pathname'])
             proc_cur_pos[event['pathname']] = proc_cur_pos.get(event['pathname'], 0) + event['return']
             proc_max_pos[event['pathname']] = max (proc_cur_pos.get(event['pathname'], 0), proc_max_pos.get(event['pathname'], 0) )
-        elif event['type'] == 'POSIX' and event['function'] == 'fread':
+        elif event['cat'] == 'POSIX' and event['name'] == 'fread':
             if event['pathname'] in filter:
                 continue
             proc_file_names.add (event['pathname'])
             proc_cur_pos[event['pathname']] = proc_cur_pos.get(event['pathname'], 0) + event['return']
             proc_max_pos[event['pathname']] = max (proc_cur_pos.get(event['pathname'], 0), proc_max_pos.get(event['pathname'], 0) )
-        elif event['type'] == 'POSIX' and event['function'] == 'fread64':
+        elif event['cat'] == 'POSIX' and event['name'] == 'fread64':
             if event['pathname'] in filter:
                 continue
             proc_file_names.add (event['pathname'])

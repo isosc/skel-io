@@ -84,14 +84,14 @@ def do_addcompute(config):
             augmented_events = []
             augmented_events.append (rank_events[0])
             for this_one, previous_one in zip(rank_events[1:], rank_events):
-                gap = this_one['timestamp'] - (previous_one['timestamp'] + previous_one['duration'])
+                gap = this_one['ts'] - (previous_one['ts'] + previous_one['dur'])
                 if gap < threshold:
                     augmented_events.append (this_one)
                     continue # Skip small gaps
                 compute_event = {}
-                compute_event['type'] = 'SKEL'
-                compute_event['function'] = 'compute'
-                compute_event['duration'] = gap
+                compute_event['cat'] = 'SKEL'
+                compute_event['name'] = 'compute'
+                compute_event['dur'] = gap
                 augmented_events.append (compute_event)
                 augmented_events.append (this_one)
             print ("Total {} events after augmenting".format(len(augmented_events) ) )

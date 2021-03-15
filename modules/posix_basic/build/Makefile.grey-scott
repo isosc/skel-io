@@ -1,7 +1,7 @@
 
 grey-scott:
 	mkdir -p ../repos/grey-scott
-	../bin/trace2model.py ../traces/grey-scott ../model/grey-scott.json
+	../bin/trace-json2model.py ../traces/grey-scott ../model/grey-scott.json
 	../bin/filter addcompute ../model/grey-scott.json --outfile ../model/grey-scott-compute.json
 	PYTHONPATH=${PWD}/../tmpl:${PYTHONPATH} skel template ../tmpl/CMakeLists_txt.tmpl --model ../model/grey-scott-config.json:config,../model/grey-scott-compute.json:posix-model,../model/tweak.json:tweak --outfile ../repos/grey-scott/CMakeLists.txt
 	PYTHONPATH=${PWD}/../tmpl:${PYTHONPATH} skel template ../tmpl/main_src_cxx.tmpl --model ../model/grey-scott-compute.json:posix-model,../model/tweak.json:tweak --outfile ../repos/grey-scott/skel_grey-scott.cxx
