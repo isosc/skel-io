@@ -13,33 +13,84 @@ def emit_mpi_comm(event, field='comm'):
         return "MPI_COMM_WORLD"
     return "COMM_{}".format(event[field])
 
+def ad_emit_mpi_comm (comm_in):
+    if comm_in == "MPI_COMM_WORLD" or comm_in == "MPI_COMM_SELF" or comm_in == "MPI_COMM_NULL":
+        return comm_in
+    if comm_in == "COMM_MPI_COMM_WORLD":
+        return "MPI_COMM_WORLD"
+    return "COMM_{}".format(comm_in)
+
+
+
+self.var_name_dict = {}
+self.var_count = 0
+
+def get_var_name(var_descriptor, var_kind):
+    name = self.var_name_dict.get(var_descriptor, None)
+    if name == None:
+        name =  "{}_{}".format(var_kind, self.var_count)
+        self.var_name_dict[var_descriptor] = name
+        self.var_count = self.var_count + 1
+    return name
+
+
+
 def emit_adios2_function(event, indent=4):
     rvlist = []
     rvlist.append(' '*indent + "// emitting adios2 function: {}".format(event['name']))
 
+                         ####################
     if event['name'] == 'adios2::ADIOS::ADIOS':
-        rvlist.append(' '*indent + "adios2::ADIOS adios(" + emit_mpi_comm(event) + ");")
-    elif event['name'] == 'adios2::IO adios2::ADIOS::DeclareIO':
-        rvlist.append(' '*indent + 'adios2::IO io_' + event['return'] + ' = adios.DeclareIO("' + event['name'] + '");')
-    elif event['name'] == 'Attribute<double> adios2::IO::DefineAttribute<double>':
-        rvlist.append(' '*indent + 'adios2::Attribute<double> io_' + event['return'] + ' = io_' + event['this'] +'.DefineAttribute<double>("' + event['name'] + '", ' + event['value'] + ');')
-    elif event['name'] == 'Variable<double> adios2::IO::DefineVariable<double>':
-        rvlist.append(' '*indent + 'adios2::Variable<double> io_' + event['return'] + ' = io_' + event['this'] +'.DefineVariable<double>("' + event['_name'] + '");')
-    elif event['name'] == 'Variable<int> adios2::IO::DefineVariable<int>':
-        rvlist.append(' '*indent + 'adios2::Variable<int> io_' + event['return'] + ' = io_' + event['this'] +'.DefineVariable<int>("' + event['_name'] + '");')
-    elif event['name'] == 'adios2::Engine adios2::IO::Open':
-        rvlist.append(' '*indent + 'adios2::Engine engine_' + event['return'] + ' = io_' + event['this'] + '.Open("' + event['_name'] + '", ' + event['mode'] + ');')
-    elif event['name'] == 'std::string adios2::IO::EngineType':
+        rvlist.append(' '*indent + "adios2::ADIOS adios(" + ad_emit_mpi_comm(event['args']['1']['value']) + ");")
+
+                           ########################
+    elif event['name'] == 'adios2::ADIOS::DeclareIO':
+        rvlist.append(' '*indent + 'adios2::IO ' + get_var_name(event['return'], 'io') + ' = adios.DeclareIO("' + event['args']['0']['value'] + '");')
+
+                           ###################################
+    elif event['name'] == 'adios2::IO::DefineAttribute<double>':
+        rvlist.append (' '*indent + '{')
+        rvlist.append(' '*indent + 'adios2::Attribute<double> ' + get_var_name(event['return'], 'attribute') + ' = ' + get_var_name(event['this'], 'io') +'.DefineAttribute<double>("' + event['args']['0']['value'] + '", ' + event['args']['1']['value'] + ');')
+        rvlist.append (' '*indent + '}')
+
+                           #################################
+    elif event['name'] == 'adios2::IO::DefineVariable<double>':
+        rvlist.append (' '*indent + '{')
+        rvlist.append(' '*indent + 'adios2::Variable<double> ' + get_var_name(event['return'], 'variable') + ' = ' + get_var_name(event['this'], 'io') +'.DefineVariable<double>("' + event['args']['0']['value'] + '");')
+        rvlist.append (' '*indent + '}')
+
+                           ###############################
+    elif event['name'] == 'adios2::IO::DefineVariable<int>':
+        rvlist.append (' '*indent + '{')
+        rvlist.append(' '*indent + 'adios2::Variable<int> ' + get_var_name(event['return'], 'variable') + ' = ' + get_var_name(event['this'], 'io') +'.DefineVariable<int>("' + event['args']['0']['value'] + '");')
+        rvlist.append (' '*indent + '}')
+
+                           ################
+    elif event['name'] == 'adios2::IO::Open':
+        rvlist.append(' '*indent + 'adios2::Engine ' + get_var_name(event['return'], 'engine') + ' = ' + get_var_name(event['this'], 'io') + '.Open("' + event['args']['0']['value'] + '", adios2::' + event['args']['1']['value'] + ');')
+
+                           ######################
+    elif event['name'] == 'adios2::IO::EngineType':
         rvlist.append(' '*indent + '// Ignoring EngineType call.')
-    elif event['name'] == 'adios2::StepStatus adios2::Engine::BeginStep':
-        rvlist.append(' '*indent + 'engine_' + event['this'] + '.BeginStep();')
-    elif event['name'] == 'void adios2::Engine::Put<int>':
+
+                           #########################
+    elif event['name'] == 'adios2::Engine::BeginStep':
+        rvlist.append(' '*indent + get_var_name(event['this'], 'engine') + '.BeginStep();')
+
+                           ########################
+    elif event['name'] == 'adios2::Engine::Put<int>':
+        rvlist.append(' '*indent + '//' + get_var_name(event['this'], 'engine') + '.Put<int>(' + get_var_name(event['args']['0']['value'], 'variable') + ' , , );')
+
+                           ###########################
+    elif event['name'] == 'adios2::Engine::Put<double>':
         pass
-    elif event['name'] == 'void adios2::Engine::Put<double>':
-        pass
-    elif event['name'] == 'void adios2::Engine::EndStep':
-        rvlist.append(' '*indent + 'engine_' + event['this'] + '.EndStep();')
-    elif event['name'] == 'void adios2::Engine::Close':
+
+                           #######################
+    elif event['name'] == 'adios2::Engine::EndStep':
+        rvlist.append(' '*indent + get_var_name(event['this'], 'engine') + '.EndStep();')
+
+                           #####################
+    elif event['name'] == 'adios2::Engine::Close':
         pass
     else:
         raise NotImplementedError('ADIOS2 fuction not implemented -{}-'.format(event['name']))
