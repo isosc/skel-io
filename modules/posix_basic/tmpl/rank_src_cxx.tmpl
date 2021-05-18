@@ -33,6 +33,50 @@ def get_var_name(var_descriptor, var_kind):
         self.var_count = self.var_count + 1
     return name
 
+def have_var(var_descriptor):
+    if self.var_name_dict.get(var_descriptor, None) != None:
+        return True
+    return False
+
+
+
+self.vardims = {}
+
+def parse_dims(dimstr):
+    if dimstr == ']' or dimstr == '':
+        return None
+
+    # Remove brackets
+    assert dimstr[0] == '['
+    assert dimstr[-1] == ']'
+    dimstr = dimstr[1:-1]
+
+    dimstrs = dimstr.split(',')
+    return map(int, dimstrs)
+      
+
+def capture_var_shape(event):
+    shapestr = event['args'].get('1', {}).get('value','')
+    varname = event['args'].get('0', {}).get('value','')
+
+    self.vardims[varname] = parse_dims(shapestr)
+    return self.vardims[varname]
+
+def get_var_start(event):
+    startstr = event['args'].get('2', {}).get('value','')
+    return parse_dims(startstr)
+
+def get_var_count(event):
+    countstr = event['args'].get('3', {}).get('value','')
+    return parse_dims(countstr)
+
+def is_scalar(name):
+    return self.vardims.get (name, None) == None
+
+
+def strip_var_name(s):
+    # Convert something that looks like "Variable<int32_t>(Name: 'step')" to "step"
+    return s[s.find("'")+1:s.rfind("'")] 
 
 
 def emit_adios2_function(event, indent=4):
@@ -41,57 +85,147 @@ def emit_adios2_function(event, indent=4):
 
                          ####################
     if event['name'] == 'adios2::ADIOS::ADIOS':
+                         ####################
+
         rvlist.append(' '*indent + "adios2::ADIOS adios(" + ad_emit_mpi_comm(event['args']['1']['value']) + ");")
 
                            ########################
     elif event['name'] == 'adios2::ADIOS::DeclareIO':
+                           ########################
+
         rvlist.append(' '*indent + 'adios2::IO ' + get_var_name(event['return'], 'io') + ' = adios.DeclareIO("' + event['args']['0']['value'] + '");')
 
                            ###################################
     elif event['name'] == 'adios2::IO::DefineAttribute<double>':
+                           ###################################
+
         rvlist.append (' '*indent + '{')
         rvlist.append(' '*indent + 'adios2::Attribute<double> ' + get_var_name(event['return'], 'attribute') + ' = ' + get_var_name(event['this'], 'io') +'.DefineAttribute<double>("' + event['args']['0']['value'] + '", ' + event['args']['1']['value'] + ');')
         rvlist.append (' '*indent + '}')
 
                            #################################
     elif event['name'] == 'adios2::IO::DefineVariable<double>':
-        rvlist.append (' '*indent + '{')
-        rvlist.append(' '*indent + 'adios2::Variable<double> ' + get_var_name(event['return'], 'variable') + ' = ' + get_var_name(event['this'], 'io') +'.DefineVariable<double>("' + event['args']['0']['value'] + '");')
-        rvlist.append (' '*indent + '}')
+                           #################################
+
+        shape = capture_var_shape(event)
+        start = get_var_start(event)
+        count = get_var_count(event)
+        #rvlist.append ("#" + capture_var_shape(event)) # emit return value for debugging
+
+        #rvlist.append (' '*indent + '{')
+        if have_var(event['return']):
+          rvlist.append(' '*indent +
+            get_var_name(event['return'], 'variable') + ' = ' + 
+            get_var_name(event['this'], 'io') +
+            '.DefineVariable<double>("' + event['args']['0']['value'] + '", ' +
+            '{' + ','.join(map(str,shape)) + '},' +
+            '{' + ','.join(map(str,start)) + '},' +
+            '{' + ','.join(map(str,count)) + '},' +
+            event['args']['4']['value'] +
+            ');')
+        else:
+          rvlist.append(' '*indent +
+            'adios2::Variable<double> ' + 
+            get_var_name(event['return'], 'variable') + ' = ' + 
+            get_var_name(event['this'], 'io') +
+            '.DefineVariable<double>("' + event['args']['0']['value'] + '", ' +
+            '{' + ','.join(map(str,shape)) + '},' +
+            '{' + ','.join(map(str,start)) + '},' +
+            '{' + ','.join(map(str,count)) + '},' +
+            event['args']['4']['value'] +
+            ');')
+
+
+          #rvlist.append(' '*indent + 'adios2::Variable<double> ' + get_var_name(event['return'], 'variable') + ' = ' + get_var_name(event['this'], 'io') +'.DefineVariable<double>("' + event['args']['0']['value'] + '");')
+        #rvlist.append (' '*indent + '}')
 
                            ###############################
     elif event['name'] == 'adios2::IO::DefineVariable<int>':
-        rvlist.append (' '*indent + '{')
-        rvlist.append(' '*indent + 'adios2::Variable<int> ' + get_var_name(event['return'], 'variable') + ' = ' + get_var_name(event['this'], 'io') +'.DefineVariable<int>("' + event['args']['0']['value'] + '");')
-        rvlist.append (' '*indent + '}')
+                           ###############################
+
+        shape = capture_var_shape(event)
+        start = get_var_start(event)
+        count = get_var_count(event)
+
+        #rvlist.append (' '*indent + '{')
+        if have_var(event['return']):
+          rvlist.append(' '*indent + get_var_name(event['return'], 'variable') + ' = ' + get_var_name(event['this'], 'io') +'.DefineVariable<int>("' + event['args']['0']['value'] + '");')
+        else:
+          rvlist.append(' '*indent + 'adios2::Variable<int> ' + get_var_name(event['return'], 'variable') + ' = ' + get_var_name(event['this'], 'io') +'.DefineVariable<int>("' + event['args']['0']['value'] + '");')
+        #rvlist.append (' '*indent + '}')
 
                            ################
     elif event['name'] == 'adios2::IO::Open':
+                           ################
+
         rvlist.append(' '*indent + 'adios2::Engine ' + get_var_name(event['return'], 'engine') + ' = ' + get_var_name(event['this'], 'io') + '.Open("' + event['args']['0']['value'] + '", adios2::' + event['args']['1']['value'] + ');')
 
                            ######################
     elif event['name'] == 'adios2::IO::EngineType':
+                           ######################
+
         rvlist.append(' '*indent + '// Ignoring EngineType call.')
 
                            #########################
     elif event['name'] == 'adios2::Engine::BeginStep':
+                           #########################
+
         rvlist.append(' '*indent + get_var_name(event['this'], 'engine') + '.BeginStep();')
 
                            ########################
     elif event['name'] == 'adios2::Engine::Put<int>':
-        rvlist.append(' '*indent + '//' + get_var_name(event['this'], 'engine') + '.Put<int>(' + get_var_name(event['args']['0']['value'], 'variable') + ' , , );')
+                           ########################
+
+        rvlist.append(' '*indent + '{')
+        if is_scalar (strip_var_name(event['args']['0']['value'])):
+          rvlist.append(' '*indent + 'int '+ strip_var_name(event['args']['0']['value']) + '_mem = 0;')
+          rvlist.append(' '*indent + get_var_name(event['this'], 'engine') + '.Put<int>(' +
+            get_var_name(event['args']['0']['value'], 'variable') + ' ,' +
+            strip_var_name(event['args']['0']['value']) + '_mem, ' +
+            'adios2::' + event['args']['2']['value'] + ');')
+        else:
+          rvlist.append(' '*indent + '// TODO: declaration')
+          rvlist.append(' '*indent + get_var_name(event['this'], 'engine') + '.Put<int>(' +
+            get_var_name(event['args']['0']['value'], 'variable') +
+            strip_var_name(event['args']['0']['value']) + '_mem, ' +
+            'adios2::' + event['args']['2']['value'] + ');')
+        rvlist.append(' '*indent + '}')
 
                            ###########################
     elif event['name'] == 'adios2::Engine::Put<double>':
-        pass
+                           ###########################
+
+        rvlist.append(' '*indent + '{')
+        if is_scalar (strip_var_name(event['args']['0']['value'])):
+          rvlist.append(' '*indent + 'double '+ strip_var_name(event['args']['0']['value']) + '_mem = 0;')
+          rvlist.append(' '*indent + get_var_name(event['this'], 'engine') + '.Put<double>(' +
+            get_var_name(event['args']['0']['value'], 'variable') + ' ,' +
+            strip_var_name(event['args']['0']['value']) + '_mem, ' +
+            'adios2::' + event['args']['2']['value'] + ');')
+        else:
+          rvlist.append(' '*indent + 'uint64_t size = ' + '*'.join(['100','100','100']) + ';')
+          rvlist.append(' '*indent + 'std::vector<double> '+ strip_var_name(event['args']['0']['value']) + '_mem(size, 17);')
+          rvlist.append(' '*indent + get_var_name(event['this'], 'engine') + '.Put<double>(' +
+            get_var_name(event['args']['0']['value'], 'variable') + ', ' +
+            strip_var_name(event['args']['0']['value']) + '_mem.data()' +
+            ', adios2::' + event['args']['2']['value'] +
+            ');')
+        rvlist.append(' '*indent + '}')
+
 
                            #######################
     elif event['name'] == 'adios2::Engine::EndStep':
+                           #######################
+
+        rvlist.append(' '*indent + get_var_name(event['this'], 'engine') + '.PerformPuts();')
         rvlist.append(' '*indent + get_var_name(event['this'], 'engine') + '.EndStep();')
 
                            #####################
     elif event['name'] == 'adios2::Engine::Close':
-        pass
+                           #####################
+        rvlist.append(' '*indent + get_var_name(event['this'], 'engine') + '.Close();')
+
+
     else:
         raise NotImplementedError('ADIOS2 fuction not implemented -{}-'.format(event['name']))
 
@@ -524,3 +658,5 @@ filter = self.models['tweak']['filter']
 
     }
 }
+
+// <%= self.var_name_dict %>
