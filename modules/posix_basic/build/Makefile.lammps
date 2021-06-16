@@ -1,0 +1,39 @@
+
+lammps:
+	mkdir -p ../repos/lammps
+	../bin/trace-json2model.py ../traces/lammps ../model/lammps.json
+	../bin/filter addcompute ../model/lammps.json --outfile ../model/lammps-compute.json
+	PYTHONPATH=${PWD}/../tmpl:${PYTHONPATH} skel template ../tmpl/CMakeLists_txt.tmpl --model ../model/lammps-config.json:config,../model/lammps-compute.json:posix-model,../model/tweak.json:tweak --outfile ../repos/lammps/CMakeLists.txt
+	PYTHONPATH=${PWD}/../tmpl:${PYTHONPATH} skel template ../tmpl/main_src_cxx.tmpl --model ../model/lammps-compute.json:posix-model,../model/tweak.json:tweak --outfile ../repos/lammps/skel_lammps.cxx
+	PYTHONPATH=${PWD}/../tmpl:${PYTHONPATH} skel template ../tmpl/create_synthetic_data_cxx.tmpl --model ../model/lammps-compute.json:posix-model,../model/tweak.json:tweak --outfile ../repos/lammps/create_synthetic_data.cxx
+	PYTHONPATH=${PWD}/../tmpl:${PYTHONPATH} skel template ../tmpl/rank_src_cxx.tmpl --arg rank:0 --model ../model/lammps-compute.json:posix-model,../model/tweak.json:tweak --outfile ../repos/lammps/rank00000.cxx
+	PYTHONPATH=${PWD}/../tmpl:${PYTHONPATH} skel template ../tmpl/rank_src_cxx.tmpl --arg rank:1 --model ../model/lammps-compute.json:posix-model,../model/tweak.json:tweak --outfile ../repos/lammps/rank00001.cxx
+	PYTHONPATH=${PWD}/../tmpl:${PYTHONPATH} skel template ../tmpl/rank_src_cxx.tmpl --arg rank:2 --model ../model/lammps-compute.json:posix-model,../model/tweak.json:tweak --outfile ../repos/lammps/rank00002.cxx
+	PYTHONPATH=${PWD}/../tmpl:${PYTHONPATH} skel template ../tmpl/rank_src_cxx.tmpl --arg rank:3 --model ../model/lammps-compute.json:posix-model,../model/tweak.json:tweak --outfile ../repos/lammps/rank00003.cxx
+	mkdir -p ../repos/lammps/build
+	cd ../repos/lammps/build && cmake .. && make && cd -
+
+
+
+refresh:
+	skel template ../tmpl/Makefile.tmpl --model ../model/lammps-config.json:config,../model/lammps.json:posix-model,../model/tweak.json:tweak --outfile Makefile.lammps
+
+
+
+create_synthetic:
+	cd ../repos/lammps/build && ./create_synthetic_data && cd -
+
+run:
+	cd ../repos/lammps/build && mpirun -np 4 -oversubscribe ./skel_grey_scott_posix_compute && cd -
+	cd ../repos/grey-scott/build && ~/sw/skel-io/bin/skel-io-merge && cd -
+
+run-tau:
+	cd ../repos/grey-scott/build && mpirun -np 36 -oversubscribe tau_exec -T mpi,pthread -io -skel ./skel_grey_scott_posix_compute && cd -
+
+plot:
+	cd ../repos/grey-scott/build && ~/sw/skel-io/bin/skel-io-plot && cd -
+	
+
+.PHONY: refresh create_synthetic run run-tau plot
+
+
