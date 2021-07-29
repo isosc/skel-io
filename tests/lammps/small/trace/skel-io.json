@@ -1,0 +1,6 @@
+{
+	"config-file": "../model/lammps-config.json",
+	"io-model-base": "../model/lammps",
+	"trace-dir": "../traces/lammps",
+	"name": "lammps"
+}

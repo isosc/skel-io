@@ -1,0 +1,26 @@
+
+\#include <iostream>
+\#include "mpi.h"
+
+#for $t_rank in range($self.models['posix-model']['num_ranks'])
+void do_rank_<%='{0:05d}'.format(t_rank)%>(MPI_Comm comm);
+#end for
+
+std::string logfilename = "perf.json";
+std::string tag = "Case B";
+
+int main(int argc, char** argv) {
+
+    int rank;
+    MPI_Init(&argc, &argv);
+    MPI_Comm_rank (MPI_COMM_WORLD, &rank);
+
+    if (0 == rank)
+        do_rank_00000(MPI_COMM_WORLD);
+#for $t_rank in range(1,$self.models['posix-model']['num_ranks'])
+    else if ($t_rank == rank)
+        do_rank_<%='{0:05d}'.format(t_rank)%>(MPI_COMM_WORLD);
+#end for
+
+    MPI_Finalize();
+}

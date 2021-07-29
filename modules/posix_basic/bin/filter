@@ -57,7 +57,7 @@ def do_posixonly(config):
     posix_model['num_ranks'] = doc['num_ranks']
 
     with open (outfile, 'w') as out:
-        json.dump (posix_model, out, indent=2)
+        json.dump (posix_model, out, indent=3)
 
 
 def do_addcompute(config):

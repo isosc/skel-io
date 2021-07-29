@@ -1,0 +1,82 @@
+<%
+
+import common
+
+file_names = set()
+max_pos = {}
+filter = self.models['tweak']['filter'] # filenames to filter out
+for proc in self.models['posix-model']['events']:
+    proc_file_names = set()
+    proc_max_pos = {}
+    proc_cur_pos = {}
+    for event in proc:
+        if event['cat'] == 'POSIX' and event['name'] == 'read':
+            if event['pathname'] in filter:
+                continue
+            proc_file_names.add (event['pathname'])
+            proc_cur_pos[event['pathname']] = proc_cur_pos.get(event['pathname'], 0) + event['return']
+            proc_max_pos[event['pathname']] = max (proc_cur_pos.get(event['pathname'], 0), proc_max_pos.get(event['pathname'], 0) )
+        elif event['cat'] == 'POSIX' and event['name'] == 'fread':
+            if event['pathname'] in filter:
+                continue
+            proc_file_names.add (event['pathname'])
+            proc_cur_pos[event['pathname']] = proc_cur_pos.get(event['pathname'], 0) + event['return']
+            proc_max_pos[event['pathname']] = max (proc_cur_pos.get(event['pathname'], 0), proc_max_pos.get(event['pathname'], 0) )
+        elif event['cat'] == 'POSIX' and event['name'] == 'fread64':
+            if event['pathname'] in filter:
+                continue
+            proc_file_names.add (event['pathname'])
+            proc_cur_pos[event['pathname']] = proc_cur_pos.get(event['pathname'], 0) + event['return']
+            proc_max_pos[event['pathname']] = max (proc_cur_pos.get(event['pathname'], 0), proc_max_pos.get(event['pathname'], 0) )
+        file_names = file_names.union (proc_file_names)
+        for file in file_names:
+            max_pos[file] = max (max_pos.get(file, 0), proc_max_pos.get(file, 0))
+                
+
+%>
+
+\#include <string>
+\#include <cstring>
+\#include <iostream>
+\#include <cstdio>
+
+
+void create_posix_file (std::string fn, size_t file_size) {
+    std::cout << "Create " << fn << " size " << file_size << std::endl;
+
+    // Open the file
+    FILE* file = fopen64 (fn.c_str(), "wbS"); // write, binary, optimize sequential
+    
+    // Create a buffer to write
+    size_t bufsize = 1 * 1024 * 1024;
+    void* buf = malloc (bufsize);
+
+    // Initialize buffer with zeroes
+    std::memset (buf, 0, bufsize);
+
+    // Write buffer until we have written the desired size
+    size_t remaining = file_size;
+    while (remaining >= 1) {
+        if (remaining < 1) return;
+        std::cerr << "Remaining: " << remaining << std::endl;
+        // Write as much as bufsize
+        size_t amount_to_write = std::min (bufsize, remaining);
+        size_t this_write = fwrite (buf, 1, amount_to_write, file);
+        if (this_write == 0) {
+            std::cerr << "Problem writing file: " << fn << ", exiting." << std::endl;
+            std::cerr << "Remaining: " << remaining << std::endl;
+            exit (2);
+        }
+        remaining -= this_write;
+    }
+}
+
+
+int main (int argc, char** argv) {
+
+#for $file_name in $file_names
+    create_posix_file ("<%=common.to_fp_name(file_name)%>", $max_pos[$file_name]);
+#end for
+
+}
+
