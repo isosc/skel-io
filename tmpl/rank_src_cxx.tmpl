@@ -42,6 +42,8 @@ self.var_name_dict = {}
 self.var_count = 0
 
 def get_var_name(var_descriptor, var_kind):
+    if var_descriptor:
+        var_descriptor = strip_var_name(var_descriptor) 
     name = self.var_name_dict.get(var_descriptor, None)
     if name == None:
         name =  "{}_{}".format(var_kind, self.var_count)
@@ -68,7 +70,7 @@ def parse_dims(dimstr):
     dimstr = dimstr[1:-1]
 
     dimstrs = dimstr.split(',')
-    return map(int, dimstrs)
+    return list(map(int, dimstrs))
       
 
 def capture_var_shape(event):
@@ -91,6 +93,8 @@ def is_scalar(name):
 
 
 def strip_var_name(s):
+    if s.find("'") == -1:
+        return s
     # Convert something that looks like "Variable<int32_t>(Name: 'step')" to "step"
     return s[s.find("'")+1:s.rfind("'")] 
 
@@ -104,13 +108,20 @@ def emit_adios2_function(event, indent=4):
                          ####################
     if event['name'] == 'adios2::ADIOS::ADIOS':
                          ####################
-        rvlist.append(' '*indent + "adios2::ADIOS adios(" + ad_emit_mpi_comm(event['args']['1']['value']) + ");")
+        rvlist.append(' '*indent + f"adios2::ADIOS {get_var_name(event['this'], 'adios')}(" + ad_emit_mpi_comm(event['args']['1']['value']) + ");")
 
                            ########################
     elif event['name'] == 'adios2::ADIOS::DeclareIO':
                            ########################
 
-        rvlist.append(' '*indent + 'adios2::IO ' + get_var_name(event['return'], 'io') + ' = adios.DeclareIO("' + event['args']['0']['value'] + '");')
+        if have_var(strip_var_name(event['return'])):
+            #rvlist.append('A')
+            rvlist.append(' '*indent + get_var_name(strip_var_name(event['return']), 'io') + ' = ' + get_var_name(event['this'], 'adios') + '.DeclareIO("' + event['args']['0']['value'] + '");')
+
+        else:
+            #rvlist.append('B')
+            rvlist.append(' '*indent + 'adios2::IO ' + get_var_name(strip_var_name(event['return']), 'io') + ' = ' + get_var_name(event['this'], 'adios') + '.DeclareIO("' + event['args']['0']['value'] + '");')
+            
 
                                    ###########################
     elif event['name'].startswith('adios2::IO::DefineAttribute'):
@@ -121,15 +132,14 @@ def emit_adios2_function(event, indent=4):
 
 
         rvlist.append (' '*indent + '{')
-        rvlist.append(' '*indent + 'adios2::Attribute<' + type + '> ' + get_var_name(event['return'], 'attribute') + ' = ' + get_var_name(event['this'], 'io') +'.DefineAttribute<double>("' + event['args']['0']['value'] + '", ' + event['args']['1']['value'] + ');')
+        rvlist.append(' '*indent + 'adios2::Attribute<' + type + '> ' + get_var_name(event['return'], 'attribute') + ' = ' + get_var_name(event['this'], 'io') +'.DefineAttribute<' + type + '>("' + event['args']['0']['value'] + '", ' + event['args']['1']['value'] + ');')
         rvlist.append (' '*indent + '}')
 
 
-                           ###############################
+                                   ##########################
     elif event['name'].startswith('adios2::IO::DefineVariable'):
-                           ###############################
+                                   ##########################
 
-# This is the scalar version  with fewer params
         
         n = event['name']
         type = n[n.find('<')+1:n.find('>')]
@@ -138,19 +148,26 @@ def emit_adios2_function(event, indent=4):
         start = get_var_start(event)
         count = get_var_count(event)
 
-        if shape == None: # Use the scalar form
+        is_local_variable = (shape != None) and (shape[0] == 18446744073709551613)
 
-            rvlist.append (' '*indent + '{')
-            if have_var(event['return']):
-              rvlist.append(' '*indent + get_var_name(event['return'], 'variable') + ' = ' + get_var_name(event['this'], 'io') +'.DefineVariable<' + type + '>("' + event['args']['0']['value'] + '");')
+        if shape == None or is_local_variable: # Use the scalar form
+
+            shape_term = ''
+            if is_local_variable:
+                shape_term = ', {adios2::LocalValueDim}'
+
+            #rvlist.append (' '*indent + '{')
+            if have_var(strip_var_name(event['return'])):
+              rvlist.append(' '*indent + get_var_name(strip_var_name(event['return']), 'variable') + ' = ' + get_var_name(event['this'], 'io') +'.DefineVariable<' + type + '>("' + event['args']['0']['value'] + '"' + shape_term + ');')
             else:
-              rvlist.append(' '*indent + 'adios2::Variable<' + type + '> ' + get_var_name(event['return'], 'variable') + ' = ' + get_var_name(event['this'], 'io') +'.DefineVariable<' + type + '>("' + event['args']['0']['value'] + '");')
+              rvlist.append(' '*indent + 'adios2::Variable<' + type + '> ' + get_var_name(strip_var_name(event['return']), 'variable') + ' = ' + get_var_name(event['this'], 'io') +'.DefineVariable<' + type + '>("' + event['args']['0']['value'] + '"' + shape_term + ');')
             #rvlist.append (' '*indent + '}')
 
         else: # Not scalar
 
             #rvlist.append (' '*indent + '{')
-            if have_var(event['return']): #Not scalar, seen before
+            if have_var(strip_var_name(event['return'])): #Not scalar, seen before
+              #rvlist.append('A')
               rvlist.append(' '*indent +
                 get_var_name(event['return'], 'variable') + ' = ' + 
                 get_var_name(event['this'], 'io') +
@@ -161,15 +178,16 @@ def emit_adios2_function(event, indent=4):
                 ', ' + event['args']['4']['value'] +
                 ');')
             else: #Not scalar, first appearance
+              #rvlist.append('B')
               rvlist.append(' '*indent +
                 'adios2::Variable<' + type + '> ' + 
                 get_var_name(event['return'], 'variable') + ' = ' + 
                 get_var_name(event['this'], 'io') +
-#                '.DefineVariable<' + type + '>("' + event['args']['0']['value'] + '"' +
-#                ', {' + '*'.join(map(str,shape)) + '},' +
-#                '{' + '*'.join(map(str,start)) + '},' +
-#                '{' + '*'.join(map(str,count)) + '}' +
-#                ', ' + event['args']['4']['value'] +
+                '.DefineVariable<' + type + '>("' + event['args']['0']['value'] + '"' +
+                ', {' + '*'.join(map(str,shape)) + '},' +
+                '{' + '*'.join(map(str,start)) + '},' +
+                '{' + '*'.join(map(str,count)) + '}' +
+                ', ' + event['args']['4']['value'] +
                 ');')
 
 
@@ -193,45 +211,35 @@ def emit_adios2_function(event, indent=4):
 
         rvlist.append(' '*indent + get_var_name(event['this'], 'engine') + '.BeginStep();')
 
-                           ########################
-    elif event['name'] == 'adios2::Engine::Put<int>':
-                           ########################
 
+                                   ###################
+    elif event['name'].startswith('adios2::Engine::Put<'):
+                                   ###################
+
+        n = event['name']
+        type = n[n.find('<')+1:n.find('>')]
+
+        #rvlist.append(' '*indent + f'// Put({type})')
         rvlist.append(' '*indent + '{')
-#        if is_scalar (strip_var_name(event['args']['0']['value'])):
-#          rvlist.append(' '*indent + 'int '+ strip_var_name(event['args']['0']['value']) + '_mem = 0;')
-#          rvlist.append(' '*indent + get_var_name(event['this'], 'engine') + '.Put<int>(' +
-#            get_var_name(event['args']['0']['value'], 'variable') + ' ,' +
-#            strip_var_name(event['args']['0']['value']) + '_mem, ' +
-#            'adios2::' + event['args']['2']['value'] + ');')
-#        else:
-#          rvlist.append(' '*indent + '// TODO: declaration')
-#          rvlist.append(' '*indent + get_var_name(event['this'], 'engine') + '.Put<int>(' +
-#            get_var_name(event['args']['0']['value'], 'variable') +
-#            strip_var_name(event['args']['0']['value']) + '_mem, ' +
-#            'adios2::' + event['args']['2']['value'] + ');')
-#        rvlist.append(' '*indent + '}')
-
-                           ###########################
-    elif event['name'] == 'adios2::Engine::Put<double>':
-                           ###########################
-
-        rvlist.append(' '*indent + '{')
-#        if is_scalar (strip_var_name(event['args']['0']['value'])):
-#          rvlist.append(' '*indent + 'double '+ strip_var_name(event['args']['0']['value']) + '_mem = 0;')
-#          rvlist.append(' '*indent + get_var_name(event['this'], 'engine') + '.Put<double>(' +
-#            get_var_name(event['args']['0']['value'], 'variable') + ' ,' +
-#            strip_var_name(event['args']['0']['value']) + '_mem, ' +
-#            'adios2::' + event['args']['2']['value'] + ');')
-#        else:
-#          rvlist.append(' '*indent + 'uint64_t size = ' + '*'.join(['100','100','100']) + ';')
-#          rvlist.append(' '*indent + 'std::vector<double> '+ strip_var_name(event['args']['0']['value']) + '_mem(size, 17);')
-#          rvlist.append(' '*indent + get_var_name(event['this'], 'engine') + '.Put<double>(' +
-#            get_var_name(event['args']['0']['value'], 'variable') + ', ' +
-#            strip_var_name(event['args']['0']['value']) + '_mem.data()' +
-#            ', adios2::Mode::Sync' +  #+ event['args']['2']['value'] +
-#            ');')
-#        rvlist.append(' '*indent + '}')
+        if is_scalar (event['args']['0']['value']):
+        #if is_scalar (strip_var_name(event['args']['0']['value'])):
+          rvlist.append(' '*indent + type + ' '+ strip_var_name(event['args']['0']['value']) + '_mem = 0;')
+          rvlist.append(' '*indent + get_var_name(event['this'], 'engine') + f'.Put<{type}>(' +
+            get_var_name(event['args']['0']['value'], 'variable') + ' ,' +
+            strip_var_name(event['args']['0']['value']) + '_mem, ' +
+            'adios2::' + event['args']['2']['value'] + ');')
+          #rvlist.append(str(self.var_name_dict))
+        else:
+          rvlist.append(' '*indent + 'uint64_t size = ' + '*'.join(['100','100','100']) + ';')
+          rvlist.append(' '*indent + f'std::vector<{type}> '+ event['args']['0']['value'] + '_mem(size, 17);')
+          #rvlist.append(' '*indent + f'std::vector<{type}> '+ strip_var_name(event['args']['0']['value']) + '_mem(size, 17);')
+          rvlist.append(' '*indent + get_var_name(event['this'], 'engine') + f'.Put<{type}>(' +
+            get_var_name(event['args']['0']['value'], 'variable') + ', ' +
+            event['args']['0']['value'] + '_mem.data()' +
+            #strip_var_name(event['args']['0']['value']) + '_mem.data()' +
+            ', adios2::Mode::Sync' +  #+ event['args']['2']['value'] +
+            ');')
+        rvlist.append(' '*indent + '}')
 
 
                            #######################
@@ -252,6 +260,30 @@ def emit_adios2_function(event, indent=4):
                            ########################
         rvlist.append(' '*indent + '// Ignoring InConfigFile()')
 
+
+    elif event['name'].endswith('>::SetShape'):
+
+        n = event['name']
+        type = n[n.find('<')+1:n.find('>')]
+#{"ts": 1627673281017056, "dur": 25, "ph": "X", "tid": 0, "pid": 0, "step": 0, "cat": "ADIOS2_API", "name": "adios2::Variable<double>::SetShape", "this": "Variable<double>(Name: 'atoms')", "args": { "0": {"name": "shape", "value": "[361,5]", "type": "const adios2::Dims &"}}}
+
+        shape = event['args']['0']['value'][1:-1]
+
+        rvlist.append(' '*indent + '// Ignoring SetShape')
+        #internal->varAtoms.SetShape({nAtomsGlobal, nColumns});
+        rvlist.append(f"{get_var_name(strip_var_name(event['this']), 'variable')}.SetShape({{{shape}}});")
+
+    elif event['name'].endswith('>::SetSelection'):
+
+        n = event['name']
+        type = n[n.find('<')+1:n.find('>')]
+
+        start = '0,0'
+        count = '0,0'
+
+        rvlist.append(' '*indent + '// Ignoring SetSelection')
+        #internal->varAtoms.SetSelection({{startRow, 0}, {nAtomsLocal, nColumns}});
+        rvlist.append(f"{get_var_name(strip_var_name(event['this']),'variable')}.SetSelection({{{{{start}}},{{{count}}}}});")
 
     else:
         raise NotImplementedError('ADIOS2 fuction not implemented -{}-'.format(event['name']))
@@ -343,8 +375,8 @@ def emit_mpi_function(event, indent=4):
         rvlist.append (' '*indent + 'key = {};'.format(event['key']))
         rvlist.append (' '*indent + 'MPI_Comm_split({}, color, key, &{});'.format(emit_mpi_comm(event, field='comm_in'), emit_mpi_comm(event, field='comm_out')))
     elif event['name'] == 'MPI_Comm_dup':
-       # rvlist.append (' '*indent + 'MPI_Comm COMM_{};'.format(event['comm_out']))
-        rvlist.append (' '*indent + 'MPI_Comm_dup(COMM_{}, &COMM_{});'.format(event['comm_in'], event['comm_out']))
+        #rvlist.append (' '*indent + 'MPI_Comm_dup(COMM_{}, &COMM_{});'.format(event['comm_in'], event['comm_out']))
+        rvlist.append (' '*indent + 'MPI_Comm_dup({}, &COMM_{});'.format(emit_mpi_comm(event, field='comm_in'), event['comm_out']))
     elif event['name'] == 'MPI_Gather':
         rvlist.append (' '*indent + '{')
         rvlist.append (' '*indent + 'MPI_Datatype sendtype = MPI_BYTE;')
@@ -696,4 +728,3 @@ filter = ["/proc/self/maps"]
     }
 }
 
-// <%= self.var_name_dict %>

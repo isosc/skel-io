@@ -27,6 +27,7 @@ def process (config):
     rank_template_filename = f"{template_dir}/rank_src_cxx.tmpl"
 
     create_synthetic_data_template_filename = f"{template_dir}/create_synthetic_data_cxx.tmpl"
+    create_synthetic_data_outfilename = f"{config.outdir}/create_synthetic_data.cxx"
     #_template_filename = f"{template_dir}/"
 
     # Create a model from the given traces
@@ -44,15 +45,15 @@ def process (config):
     # Next, the main c++ code
     __util.instantiate(main_template_filename, modelmap, args, main_outfilename)
 
+    # A utility to create any needed synthetic data
+    __util.instantiate(create_synthetic_data_template_filename, modelmap, args, create_synthetic_data_outfilename)
+
     # Now, the detailed code for each rank
     args = {}
     for i in range(4):
         rank_outfilename = f"{config.outdir}/rank{i:05}.cxx"
         args['rank'] = i
         __util.instantiate(rank_template_filename, modelmap, args, rank_outfilename)
-
-    # And finally, a utility to create any needed synthetic data
-    #__util.instantiate(template_filename, modelmap, args, outfilename)
 
 
     #__util.instantiate(template_filename, modelmap, args, outfilename)

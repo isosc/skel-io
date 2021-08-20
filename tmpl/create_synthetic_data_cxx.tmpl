@@ -1,10 +1,11 @@
 <%
 
-import common
+#import common
 
 file_names = set()
 max_pos = {}
-filter = self.models['tweak']['filter'] # filenames to filter out
+#filter = self.models['tweak']['filter'] # filenames to filter out
+filter=None
 for proc in self.models['posix-model']['events']:
     proc_file_names = set()
     proc_max_pos = {}
