@@ -1,6 +1,7 @@
 import argparse
 from Cheetah.Template import Template
 import json
+import os
 from skel_io import __util, __path
 
 def process (config):
@@ -30,6 +31,11 @@ def process (config):
     create_synthetic_data_outfilename = f"{config.outdir}/create_synthetic_data.cxx"
     #_template_filename = f"{template_dir}/"
 
+    # Count the trace files
+    files_in_tracedir = [t for t in os.listdir(config.tracedir) if '.trace' in t]
+    num_traces = len(files_in_tracedir)
+
+
     # Create a model from the given traces
     __util.trace_to_model(config.tracedir, dumped_model_filename)
     __util.filter("addcompute", dumped_model_filename, filtered_model_filename)
@@ -50,7 +56,7 @@ def process (config):
 
     # Now, the detailed code for each rank
     args = {}
-    for i in range(4):
+    for i in range(num_traces):
         rank_outfilename = f"{config.outdir}/rank{i:05}.cxx"
         args['rank'] = i
         __util.instantiate(rank_template_filename, modelmap, args, rank_outfilename)
