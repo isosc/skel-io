@@ -1,5 +1,5 @@
 
-test:
+create:
 	PYTHONPATH=${PYTHONPATH}:../../.. ../../../scripts/skel-io replay --tracedir=trace --outdir=out
 
 build:
@@ -9,4 +9,6 @@ build:
 run:
 	mpirun -np 4 --oversubscribe ./out/build/skel_lammps
 
+clean-cmake:
+	rm -rf out/build
 
